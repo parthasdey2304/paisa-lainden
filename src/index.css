@@ -1,0 +1,421 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap');
+
+:root {
+  --primary: #f472b6; /* Hot Pink */
+  --primary-hover: #db2777;
+  --secondary: #22d3ee; /* Cyan */
+  --secondary-hover: #06b6d4;
+  --background: #fdfbc8; /* Pale yellow */
+  --surface: #ffffff;
+  --text-main: #000000;
+  --text-muted: #333333;
+  --border: #000000;
+  --danger: #ef4444;
+  --success: #4ade80;
+  --warning: #facc15;
+  
+  --radius: 0px; /* Brutalism usually uses sharp corners, or slightly rounded */
+  --border-width: 3px;
+  
+  --shadow: 6px 6px 0px 0px var(--border);
+  --shadow-hover: 2px 2px 0px 0px var(--border);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background-color: var(--background);
+  color: var(--text-main);
+  line-height: 1.5;
+  background-image: radial-gradient(var(--text-main) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Base Layout Classes */
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: -1px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-links a {
+  text-decoration: none;
+  font-weight: 700;
+  color: var(--text-main);
+  padding: 0.5rem 1rem;
+  border: var(--border-width) solid transparent;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.nav-links a:hover, .nav-links a.active {
+  border: var(--border-width) solid var(--border);
+  background: var(--warning);
+  box-shadow: 3px 3px 0px 0px var(--border);
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  padding: 1.5rem;
+  border: var(--border-width) solid var(--border);
+  box-shadow: var(--shadow);
+  transition: all 0.2s ease;
+  margin-bottom: 2rem;
+}
+
+/* Dashboard Grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--secondary);
+}
+
+.stat-card:nth-child(2) { background: var(--success); }
+.stat-card:nth-child(3) { background: var(--primary); }
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--surface);
+  color: var(--text-main);
+  border: var(--border-width) solid var(--border);
+  box-shadow: 2px 2px 0px 0px var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.stat-value {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -2px;
+}
+
+.stat-label {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--surface);
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border: 2px solid var(--border);
+  align-self: flex-start;
+}
+
+/* Notification Widget */
+.notification-card {
+  background: var(--warning);
+}
+.notification-card h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.notification-list {
+  margin-top: 1rem;
+  list-style: none;
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+}
+.notification-list li {
+  padding: 1rem;
+  border-bottom: var(--border-width) solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.notification-list li:last-child {
+  border-bottom: none;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.1s;
+  border: var(--border-width) solid var(--border);
+  box-shadow: var(--shadow);
+  text-decoration: none;
+}
+
+.btn:active {
+  box-shadow: 0px 0px 0px 0px var(--border);
+  transform: translate(6px, 6px);
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--text-main);
+}
+
+.btn-secondary {
+  background-color: var(--surface);
+  color: var(--text-main);
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: var(--surface);
+}
+
+/* Forms */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.form-control {
+  padding: 0.75rem;
+  border: var(--border-width) solid var(--border);
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 1rem;
+  transition: all 0.2s;
+  box-shadow: 3px 3px 0px 0px var(--border);
+}
+
+.form-control:focus {
+  outline: none;
+  background: var(--warning);
+}
+
+/* Table */
+.table-wrapper {
+  overflow-x: auto;
+  border-top: var(--border-width) solid var(--border);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+th, td {
+  padding: 1rem;
+  border-bottom: var(--border-width) solid var(--border);
+  border-right: var(--border-width) solid var(--border);
+}
+
+th:last-child, td:last-child {
+  border-right: none;
+}
+
+th {
+  background-color: var(--warning);
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+tbody tr {
+  background: var(--surface);
+  transition: background 0.2s;
+}
+
+tbody tr:hover {
+  background-color: var(--secondary);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal-content {
+  background: var(--surface);
+  padding: 2rem;
+  width: 100%;
+  max-width: 500px;
+  border: var(--border-width) solid var(--border);
+  box-shadow: 12px 12px 0px 0px var(--primary);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+.modal-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.close-btn {
+  background: var(--danger);
+  border: var(--border-width) solid var(--border);
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+  color: white;
+  cursor: pointer;
+  box-shadow: 3px 3px 0px 0px var(--border);
+}
+.close-btn:active {
+  box-shadow: 0px 0px 0px 0px var(--border);
+  transform: translate(3px, 3px);
+}
+
+/* Utilities */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  box-shadow: 2px 2px 0px 0px var(--border);
+}
+.badge-success { background: var(--success); }
+.badge-warning { background: var(--warning); }
+.badge-danger { background: var(--danger); color: white; }
+
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 0.5rem; }
+.gap-4 { gap: 1rem; }
+.mt-4 { margin-top: 1rem; }
+.mb-4 { margin-bottom: 1rem; }
+.text-right { text-align: right; }
+
+/* Responsive / Mobile Styles */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+    justify-content: center;
+  }
+
+  .nav-links {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .nav-links a {
+    display: block;
+  }
+
+  .stat-value {
+    font-size: 2.5rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .modal-content {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+
+  .modal-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  /* For the Student List Actions, stack the buttons instead of row */
+  .flex.justify-between.gap-2 {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Table styling for mobile */
+  th, td {
+    padding: 0.75rem;
+  }
+}
+
