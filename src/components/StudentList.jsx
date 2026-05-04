@@ -31,10 +31,10 @@ const StudentList = ({ onEdit, onPay }) => {
         <thead>
           <tr>
             <th>Name</th>
-            <th>Contact</th>
-            <th>Subjects</th>
-            <th>Monthly Fee</th>
-            <th style={{ textAlign: 'center' }}>Fee Status (Current)</th>
+            <th className="hide-on-mobile">Contact</th>
+            <th className="hide-on-mobile">Subjects</th>
+            <th>Monthly<br/>Fee</th>
+            <th style={{ textAlign: 'center' }} className="hide-on-mobile">Fee Status (Current)</th>
             <th className="text-right">Actions</th>
           </tr>
         </thead>
@@ -50,20 +50,23 @@ const StudentList = ({ onEdit, onPay }) => {
               <tr key={student.id}>
                 <td>
                   <div style={{ fontWeight: 500 }}>{student.name}</div>
+                  <div className="mobile-only mt-2">
+                    {getFeeStatus(student)}
+                  </div>
                 </td>
-                <td>
+                <td className="hide-on-mobile">
                   <div style={{ fontSize: '0.875rem' }}>📞 {student.phone}</div>
                   <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>✉️ {student.email || 'No email provided'}</div>
                 </td>
-                <td>{student.subjects || 'N/A'}</td>
+                <td className="hide-on-mobile">{student.subjects || 'N/A'}</td>
                 <td>₹{student.monthlyFee}</td>
-                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                <td style={{ textAlign: 'center', verticalAlign: 'middle' }} className="hide-on-mobile">
                   <div style={{ display: 'flex', justifyContent: 'center' }}>
                     {getFeeStatus(student)}
                   </div>
                 </td>
-                <td className="text-right">
-                  <div className="flex justify-between gap-2" style={{ justifyContent: 'flex-end' }}>
+                <td className="text-right action-col">
+                  <div className="flex gap-2 action-buttons" style={{ justifyContent: 'flex-end' }}>
                     {student.email && (
                       <a href={`mailto:${student.email}?subject=Fee Update&body=Hello ${student.name},`} className="btn btn-secondary" title="Email Student">
                         ✉️ Email

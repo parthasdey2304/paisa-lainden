@@ -407,15 +407,36 @@ tbody tr:hover {
     width: 100%;
   }
 
+  .hide-on-mobile {
+    display: none !important;
+  }
+
   /* For the Student List Actions, stack the buttons instead of row */
-  .flex.justify-between.gap-2 {
-    flex-direction: column;
+  .action-buttons {
+    flex-direction: column !important;
     align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .action-buttons .btn {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    justify-content: center;
   }
 
   /* Table styling for mobile */
   th, td {
-    padding: 0.75rem;
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+.mobile-only {
+  display: none;
+}
+@media (max-width: 768px) {
+  .mobile-only {
+    display: block;
+    margin-top: 0.5rem;
   }
 }
 
