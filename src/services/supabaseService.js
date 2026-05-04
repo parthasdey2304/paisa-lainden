@@ -90,3 +90,9 @@ export const fetchPayments = async (studentId = null) => {
     monthKey: p.month_key,
   }));
 };
+
+/** Delete a payment */
+export const deletePayment = async (id) => {
+  const { error } = await supabase.from('payments').delete().eq('id', id);
+  if (error) throw error;
+};

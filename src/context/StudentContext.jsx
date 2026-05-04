@@ -141,6 +141,27 @@ export const StudentProvider = ({ children }) => {
     }));
   };
 
+  const deletePayment = async (studentId, paymentId) => {
+    const { error } = await supabase
+      .from('payments')
+      .delete()
+      .eq('id', paymentId);
+      
+    if (error) {
+      console.error('Error deleting payment:', error);
+    }
+    
+    setStudents(prev => prev.map(s => {
+      if (s.id === studentId) {
+        return {
+          ...s,
+          payments: s.payments.filter(p => p.id !== paymentId)
+        };
+      }
+      return s;
+    }));
+  };
+
   // Helper logic for dashboard
   const currentMonthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
   
@@ -177,6 +198,7 @@ export const StudentProvider = ({ children }) => {
       editStudent,
       deleteStudent,
       addPayment,
+      deletePayment,
       totalStudents,
       totalExpectedFees,
       collectedThisMonth,

@@ -1,10 +1,12 @@
 import React, { useState, useContext } from 'react';
 import { StudentContext } from '../context/StudentContext';
+import ConfirmModal from './ConfirmModal';
 
 const PaymentModal = ({ isOpen, onClose, student }) => {
-  const { addPayment, currentMonthKey } = useContext(StudentContext);
+  const { addPayment, deletePayment, currentMonthKey } = useContext(StudentContext);
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentToDelete, setPaymentToDelete] = useState(null);
 
   if (!isOpen || !student) return null;
 
@@ -81,15 +83,36 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
             <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Payment History</h3>
             <ul style={{ listStyle: 'none', maxHeight: '150px', overflowY: 'auto' }}>
               {[...student.payments].reverse().map(p => (
-                <li key={p.id} className="flex justify-between" style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                  <span>{new Date(p.date).toLocaleDateString()}</span>
-                  <strong>₹{p.amount}</strong>
+                <li key={p.id} className="flex justify-between items-center" style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                  <div>
+                    <span style={{ marginRight: '1rem' }}>{new Date(p.date).toLocaleDateString()}</span>
+                    <strong>₹{p.amount}</strong>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.8rem', background: 'var(--danger)', color: 'white', border: 'none' }}
+                    onClick={() => setPaymentToDelete(p.id)}
+                  >
+                    Delete
+                  </button>
                 </li>
               ))}
             </ul>
           </div>
         )}
       </div>
+
+      <ConfirmModal 
+        isOpen={!!paymentToDelete}
+        title="Delete Payment"
+        message="Are you sure you want to delete this payment? This action cannot be undone."
+        onConfirm={() => {
+          deletePayment(student.id, paymentToDelete);
+          setPaymentToDelete(null);
+        }}
+        onCancel={() => setPaymentToDelete(null)}
+      />
     </div>
   );
 };

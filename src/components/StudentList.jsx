@@ -1,8 +1,10 @@
 import React, { useContext, useState } from 'react';
 import { StudentContext } from '../context/StudentContext';
+import ConfirmModal from './ConfirmModal';
 
 const StudentList = ({ onEdit, onPay }) => {
   const { students, currentMonthKey, deleteStudent } = useContext(StudentContext);
+  const [studentToDelete, setStudentToDelete] = useState(null);
 
   const getFeeStatus = (student) => {
     const paidThisMonth = student.payments
@@ -73,11 +75,7 @@ const StudentList = ({ onEdit, onPay }) => {
                     <button className="btn btn-secondary" onClick={() => onEdit(student)}>
                       ✏️ Edit
                     </button>
-                    <button className="btn btn-danger" onClick={() => {
-                      if(window.confirm('Are you sure you want to delete this student?')) {
-                        deleteStudent(student.id);
-                      }
-                    }}>
+                    <button className="btn btn-danger" onClick={() => setStudentToDelete(student)}>
                       🗑️
                     </button>
                   </div>
@@ -87,6 +85,19 @@ const StudentList = ({ onEdit, onPay }) => {
           )}
         </tbody>
       </table>
+
+      <ConfirmModal 
+        isOpen={!!studentToDelete}
+        title="Delete Student"
+        message={`Are you sure you want to delete ${studentToDelete?.name}? This action cannot be undone.`}
+        onConfirm={() => {
+          if (studentToDelete) {
+            deleteStudent(studentToDelete.id);
+            setStudentToDelete(null);
+          }
+        }}
+        onCancel={() => setStudentToDelete(null)}
+      />
     </div>
   );
 };
