@@ -15,7 +15,9 @@ const Dashboard = () => {
     totalRevenue
   } = useContext(StudentContext);
 
-  const [notificationStatus, setNotificationStatus] = useState(Notification.permission);
+  const [notificationStatus, setNotificationStatus] = useState(
+    'Notification' in window ? Notification.permission : 'denied'
+  );
 
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const currentMonthName = monthNames[new Date().getMonth()];
