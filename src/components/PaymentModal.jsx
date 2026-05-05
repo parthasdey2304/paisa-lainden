@@ -6,6 +6,7 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
   const { addPayment, deletePayment, currentMonthKey } = useContext(StudentContext);
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentMethod, setPaymentMethod] = useState('offline');
   const [paymentToDelete, setPaymentToDelete] = useState(null);
 
   if (!isOpen || !student) return null;
@@ -13,8 +14,9 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!amount || amount <= 0) return;
-    addPayment(student.id, amount, date);
+    addPayment(student.id, amount, date, paymentMethod);
     setAmount('');
+    setPaymentMethod('offline');
     onClose();
   };
 
@@ -72,6 +74,17 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
               required 
             />
           </div>
+          <div className="form-group">
+            <label>Payment Method</label>
+            <select 
+              className="form-control" 
+              value={paymentMethod} 
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
+              <option value="offline">Offline / Cash</option>
+              <option value="online">Online / UPI</option>
+            </select>
+          </div>
           <div className="flex gap-4 mt-4" style={{ justifyContent: 'flex-end' }}>
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary">Record Payment</button>
@@ -87,6 +100,9 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
                   <div>
                     <span style={{ marginRight: '1rem' }}>{new Date(p.date).toLocaleDateString()}</span>
                     <strong>₹{p.amount}</strong>
+                    <span style={{ marginLeft: '1rem', fontSize: '0.8rem', color: 'var(--muted)' }}>
+                      ({p.paymentMethod || p.payment_method || 'offline'})
+                    </span>
                   </div>
                   <button 
                     type="button" 

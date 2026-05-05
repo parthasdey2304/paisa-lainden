@@ -1,13 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import StudentList from '../components/StudentList';
 import StudentModal from '../components/StudentModal';
 import PaymentModal from '../components/PaymentModal';
+import { StudentContext } from '../context/StudentContext';
 
 const StudentListPage = () => {
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [payingStudent, setPayingStudent] = useState(null);
+  
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { students } = useContext(StudentContext);
+
+  useEffect(() => {
+    if (location.state?.openPaymentFor && students.length > 0) {
+      const studentToPay = students.find(s => s.id === location.state.openPaymentFor);
+      if (studentToPay) {
+        setPayingStudent(studentToPay);
+        setIsPaymentModalOpen(true);
+        // Clear the state so it doesn't reopen if they close the modal and it re-renders
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  }, [location.state, students, navigate, location.pathname]);
 
   const handleAddStudent = () => {
     setEditingStudent(null);

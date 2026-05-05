@@ -20,10 +20,12 @@ export const fetchStudents = async () => {
     return {
       ...s,
       monthlyFee: s.monthly_fee,
+      classYear: s.class_year,
       payments: pay.map((p) => ({
         ...p,
         date: p.payment_date,
         monthKey: p.month_key,
+        paymentMethod: p.payment_method,
       })),
     };
   });
@@ -38,6 +40,7 @@ export const addStudent = async (student) => {
     phone: student.phone,
     subjects: Number(student.subjects || 1),
     monthly_fee: Number(student.monthlyFee),
+    class_year: student.classYear || null
   };
   const { data, error } = await supabase.from('students').insert([payload]).select();
   if (error) throw error;
@@ -52,6 +55,7 @@ export const editStudent = async (id, updates) => {
     phone: updates.phone,
     subjects: Number(updates.subjects || 1),
     monthly_fee: Number(updates.monthlyFee),
+    class_year: updates.classYear || null
   };
   const { error } = await supabase.from('students').update(payload).eq('id', id);
   if (error) throw error;
@@ -64,7 +68,7 @@ export const deleteStudent = async (id) => {
 };
 
 /** Add a payment for a student */
-export const addPayment = async (studentId, amount, date) => {
+export const addPayment = async (studentId, amount, date, paymentMethod = 'offline') => {
   const d = new Date(date);
   const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   const payload = {
@@ -72,6 +76,7 @@ export const addPayment = async (studentId, amount, date) => {
     amount: Number(amount),
     payment_date: date,
     month_key: monthKey,
+    payment_method: paymentMethod,
   };
   const { data, error } = await supabase.from('payments').insert([payload]).select();
   if (error) throw error;
@@ -88,6 +93,7 @@ export const fetchPayments = async (studentId = null) => {
     ...p,
     date: p.payment_date,
     monthKey: p.month_key,
+    paymentMethod: p.payment_method,
   }));
 };
 

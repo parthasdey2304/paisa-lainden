@@ -6,7 +6,8 @@ CREATE TABLE students (
   email TEXT,
   phone TEXT NOT NULL,
   subjects INTEGER DEFAULT 1,
-  monthly_fee INTEGER NOT NULL
+  monthly_fee INTEGER NOT NULL,
+  class_year TEXT
 );
 
 -- Create payments table
@@ -16,7 +17,8 @@ CREATE TABLE payments (
   student_id UUID REFERENCES students(id) ON DELETE CASCADE,
   amount INTEGER NOT NULL,
   payment_date DATE NOT NULL,
-  month_key TEXT NOT NULL
+  month_key TEXT NOT NULL,
+  payment_method TEXT DEFAULT 'offline'
 );
 
 -- Enable RLS

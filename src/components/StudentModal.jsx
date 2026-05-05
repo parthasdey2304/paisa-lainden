@@ -8,7 +8,8 @@ const StudentModal = ({ isOpen, onClose, student }) => {
     email: '',
     phone: '',
     monthlyFee: '',
-    subjects: ''
+    subjects: '',
+    classYear: ''
   });
 
   useEffect(() => {
@@ -18,7 +19,8 @@ const StudentModal = ({ isOpen, onClose, student }) => {
         email: student.email,
         phone: student.phone,
         monthlyFee: student.monthlyFee,
-        subjects: student.subjects || ''
+        subjects: student.subjects || '',
+        classYear: student.classYear || student.class_year || ''
       });
     } else {
       setFormData({
@@ -26,7 +28,8 @@ const StudentModal = ({ isOpen, onClose, student }) => {
         email: '',
         phone: '',
         monthlyFee: '',
-        subjects: ''
+        subjects: '',
+        classYear: ''
       });
     }
   }, [student, isOpen]);
@@ -75,6 +78,10 @@ const StudentModal = ({ isOpen, onClose, student }) => {
           <div className="form-group">
             <label>Number of Subjects</label>
             <input type="number" className="form-control" name="subjects" value={formData.subjects} onChange={handleChange} min="1" />
+          </div>
+          <div className="form-group">
+            <label>Class/Year</label>
+            <input type="text" className="form-control" name="classYear" value={formData.classYear} onChange={handleChange} placeholder="e.g., 10th, 1st Year" />
           </div>
           <div className="flex gap-4 mt-4" style={{ justifyContent: 'flex-end' }}>
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>

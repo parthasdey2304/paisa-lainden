@@ -29,10 +29,12 @@ export const StudentProvider = ({ children }) => {
         return { 
           ...student, 
           monthlyFee: student.monthly_fee,
+          classYear: student.class_year,
           payments: studentPayments.map(p => ({
             ...p,
             date: p.payment_date,
-            monthKey: p.month_key
+            monthKey: p.month_key,
+            paymentMethod: p.payment_method
           }))
         };
       });
@@ -58,7 +60,8 @@ export const StudentProvider = ({ children }) => {
       email: studentData.email,
       phone: studentData.phone,
       subjects: Number(studentData.subjects || 1),
-      monthly_fee: Number(studentData.monthlyFee)
+      monthly_fee: Number(studentData.monthlyFee),
+      class_year: studentData.classYear || null
     };
 
     const { data, error } = await supabase
@@ -71,7 +74,7 @@ export const StudentProvider = ({ children }) => {
       // Fallback optimistic UI
       setStudents(prev => [...prev, { ...studentData, id: Date.now().toString(), payments: [] }]);
     } else if (data && data.length > 0) {
-      setStudents(prev => [...prev, { ...data[0], monthlyFee: data[0].monthly_fee, payments: [] }]);
+      setStudents(prev => [...prev, { ...data[0], monthlyFee: data[0].monthly_fee, classYear: data[0].class_year, payments: [] }]);
     }
   };
 
@@ -81,7 +84,8 @@ export const StudentProvider = ({ children }) => {
       email: updatedData.email,
       phone: updatedData.phone,
       subjects: Number(updatedData.subjects || 1),
-      monthly_fee: Number(updatedData.monthlyFee)
+      monthly_fee: Number(updatedData.monthlyFee),
+      class_year: updatedData.classYear || null
     };
 
     const { error } = await supabase
@@ -93,7 +97,7 @@ export const StudentProvider = ({ children }) => {
       console.error('Error updating student:', error);
     }
     // Optimistic update
-    setStudents(prev => prev.map(s => s.id === id ? { ...s, ...updatedData, monthlyFee: updatedData.monthlyFee } : s));
+    setStudents(prev => prev.map(s => s.id === id ? { ...s, ...updatedData, monthlyFee: updatedData.monthlyFee, classYear: updatedData.classYear } : s));
   };
 
   const deleteStudent = async (id) => {
@@ -108,7 +112,7 @@ export const StudentProvider = ({ children }) => {
     setStudents(prev => prev.filter(s => s.id !== id));
   };
 
-  const addPayment = async (studentId, amount, date) => {
+  const addPayment = async (studentId, amount, date, paymentMethod = 'offline') => {
     const d = new Date(date);
     const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     
@@ -116,7 +120,8 @@ export const StudentProvider = ({ children }) => {
       student_id: studentId,
       amount: Number(amount),
       payment_date: date,
-      month_key: monthKey
+      month_key: monthKey,
+      payment_method: paymentMethod
     };
 
     const { data, error } = await supabase
@@ -134,7 +139,7 @@ export const StudentProvider = ({ children }) => {
       if (s.id === studentId) {
         return {
           ...s,
-          payments: [...(s.payments || []), { ...paymentObj, date: paymentObj.payment_date, monthKey: paymentObj.month_key }]
+          payments: [...(s.payments || []), { ...paymentObj, date: paymentObj.payment_date, monthKey: paymentObj.month_key, paymentMethod: paymentObj.payment_method }]
         };
       }
       return s;
@@ -178,6 +183,12 @@ export const StudentProvider = ({ children }) => {
 
   const pendingFees = Math.max(0, totalExpectedFees - collectedThisMonth);
 
+  // Total revenue all time
+  const totalRevenue = students.reduce((sum, s) => {
+    const allPayments = s.payments || [];
+    return sum + allPayments.reduce((pSum, p) => pSum + Number(p.amount), 0);
+  }, 0);
+
   // Students who haven't fully paid this month
   const pendingStudents = students.filter(s => {
     const paidThisMonth = (s.payments || [])
@@ -205,7 +216,8 @@ export const StudentProvider = ({ children }) => {
       pendingFees,
       pendingStudents,
       showFeeNotification,
-      currentMonthKey
+      currentMonthKey,
+      totalRevenue
     }}>
       {children}
     </StudentContext.Provider>
