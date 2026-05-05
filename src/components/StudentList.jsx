@@ -25,6 +25,22 @@ const StudentList = ({ onEdit, onPay }) => {
     );
   };
 
+  const sortedStudents = [...students].sort((a, b) => {
+    const aPaidThisMonth = (a.payments || [])
+      .filter(p => p.monthKey === currentMonthKey)
+      .reduce((sum, p) => sum + p.amount, 0);
+    const bPaidThisMonth = (b.payments || [])
+      .filter(p => p.monthKey === currentMonthKey)
+      .reduce((sum, p) => sum + p.amount, 0);
+    
+    const aIsPaid = aPaidThisMonth >= Number(a.monthlyFee);
+    const bIsPaid = bPaidThisMonth >= Number(b.monthlyFee);
+    
+    if (aIsPaid && !bIsPaid) return -1;
+    if (!aIsPaid && bIsPaid) return 1;
+    return 0;
+  });
+
   return (
     <div className="table-wrapper">
       <table>
@@ -39,14 +55,14 @@ const StudentList = ({ onEdit, onPay }) => {
           </tr>
         </thead>
         <tbody>
-          {students.length === 0 ? (
+          {sortedStudents.length === 0 ? (
             <tr>
               <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                 No students found. Add one to get started!
               </td>
             </tr>
           ) : (
-            students.map(student => (
+            sortedStudents.map(student => (
               <tr key={student.id}>
                 <td>
                   <div style={{ fontWeight: 500 }}>{student.name}</div>

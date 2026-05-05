@@ -3,11 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "electron-main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron": "electron .",
+    "electron:build": "vite build && electron-builder"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.1",
@@ -24,10 +27,24 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "electron": "^41.5.0",
+    "electron-builder": "^24.13.3",
     "eslint": "^10.2.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.5.0",
     "vite": "^8.0.10"
+  },
+  "build": {
+    "appId": "com.studentmanager.app",
+    "productName": "StudentManager",
+    "files": [
+      "dist/**",
+      "electron-main.js",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    }
   }
 }
