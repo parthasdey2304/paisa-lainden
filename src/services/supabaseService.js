@@ -39,8 +39,7 @@ export const addStudent = async (student) => {
     email: student.email,
     phone: student.phone,
     subjects: Number(student.subjects || 1),
-    monthly_fee: Number(student.monthlyFee),
-    class_year: student.classYear || null
+    monthly_fee: Number(student.monthlyFee)
   };
   const { data, error } = await supabase.from('students').insert([payload]).select();
   if (error) throw error;
@@ -54,8 +53,7 @@ export const editStudent = async (id, updates) => {
     email: updates.email,
     phone: updates.phone,
     subjects: Number(updates.subjects || 1),
-    monthly_fee: Number(updates.monthlyFee),
-    class_year: updates.classYear || null
+    monthly_fee: Number(updates.monthlyFee)
   };
   const { error } = await supabase.from('students').update(payload).eq('id', id);
   if (error) throw error;
@@ -75,8 +73,8 @@ export const addPayment = async (studentId, amount, date, paymentMethod = 'offli
     student_id: studentId,
     amount: Number(amount),
     payment_date: date,
-    month_key: monthKey,
-    payment_method: paymentMethod,
+    month_key: monthKey
+    // payment_method omitted to prevent API error
   };
   const { data, error } = await supabase.from('payments').insert([payload]).select();
   if (error) throw error;

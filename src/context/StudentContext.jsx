@@ -60,8 +60,8 @@ export const StudentProvider = ({ children }) => {
       email: studentData.email,
       phone: studentData.phone,
       subjects: Number(studentData.subjects || 1),
-      monthly_fee: Number(studentData.monthlyFee),
-      class_year: studentData.classYear || null
+      monthly_fee: Number(studentData.monthlyFee)
+      // class_year removed because it does not exist in the remote database yet
     };
 
     const { data, error } = await supabase
@@ -84,8 +84,8 @@ export const StudentProvider = ({ children }) => {
       email: updatedData.email,
       phone: updatedData.phone,
       subjects: Number(updatedData.subjects || 1),
-      monthly_fee: Number(updatedData.monthlyFee),
-      class_year: updatedData.classYear || null
+      monthly_fee: Number(updatedData.monthlyFee)
+      // class_year removed to prevent API error
     };
 
     const { error } = await supabase
@@ -120,8 +120,8 @@ export const StudentProvider = ({ children }) => {
       student_id: studentId,
       amount: Number(amount),
       payment_date: date,
-      month_key: monthKey,
-      payment_method: paymentMethod
+      month_key: monthKey
+      // payment_method removed because it doesn't exist in the remote database yet
     };
 
     const { data, error } = await supabase
