@@ -8,18 +8,20 @@ import { StudentContext } from '../context/StudentContext';
 const StudentListPage = () => {
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [editingStudent, setEditingStudent] = useState(null);
-  const [payingStudent, setPayingStudent] = useState(null);
+  const [editingStudentId, setEditingStudentId] = useState(null);
+  const [payingStudentId, setPayingStudentId] = useState(null);
   
   const location = useLocation();
   const navigate = useNavigate();
   const { students } = useContext(StudentContext);
+  const editingStudent = students.find(s => s.id === editingStudentId) || null;
+  const payingStudent = students.find(s => s.id === payingStudentId) || null;
 
   useEffect(() => {
     if (location.state?.openPaymentFor && students.length > 0) {
       const studentToPay = students.find(s => s.id === location.state.openPaymentFor);
       if (studentToPay) {
-        setPayingStudent(studentToPay);
+        setPayingStudentId(studentToPay.id);
         setIsPaymentModalOpen(true);
         // Clear the state so it doesn't reopen if they close the modal and it re-renders
         navigate(location.pathname, { replace: true, state: {} });
@@ -27,18 +29,32 @@ const StudentListPage = () => {
     }
   }, [location.state, students, navigate, location.pathname]);
 
+  useEffect(() => {
+    if (payingStudentId && !payingStudent) {
+      setIsPaymentModalOpen(false);
+      setPayingStudentId(null);
+    }
+  }, [payingStudentId, payingStudent]);
+
+  useEffect(() => {
+    if (editingStudentId && !editingStudent) {
+      setIsStudentModalOpen(false);
+      setEditingStudentId(null);
+    }
+  }, [editingStudentId, editingStudent]);
+
   const handleAddStudent = () => {
-    setEditingStudent(null);
+    setEditingStudentId(null);
     setIsStudentModalOpen(true);
   };
 
   const handleEditStudent = (student) => {
-    setEditingStudent(student);
+    setEditingStudentId(student.id);
     setIsStudentModalOpen(true);
   };
 
   const handlePayFees = (student) => {
-    setPayingStudent(student);
+    setPayingStudentId(student.id);
     setIsPaymentModalOpen(true);
   };
 
@@ -60,13 +76,19 @@ const StudentListPage = () => {
 
       <StudentModal 
         isOpen={isStudentModalOpen} 
-        onClose={() => setIsStudentModalOpen(false)} 
+        onClose={() => {
+          setIsStudentModalOpen(false);
+          setEditingStudentId(null);
+        }} 
         student={editingStudent}
       />
       
       <PaymentModal
         isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
+        onClose={() => {
+          setIsPaymentModalOpen(false);
+          setPayingStudentId(null);
+        }}
         student={payingStudent}
       />
     </div>
