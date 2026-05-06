@@ -7,6 +7,17 @@ export const StudentProvider = ({ children }) => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const normalizePayment = (payment) => {
+    const dateValue = payment.payment_date || payment.date || null;
+    const monthFromDate = typeof dateValue === 'string' ? dateValue.slice(0, 7) : null;
+    return {
+      ...payment,
+      date: dateValue,
+      monthKey: monthFromDate || payment.month_key || payment.monthKey || null,
+      paymentMethod: payment.payment_method || payment.paymentMethod
+    };
+  };
+
   const fetchStudents = async () => {
     try {
       setLoading(true);
@@ -30,12 +41,7 @@ export const StudentProvider = ({ children }) => {
           ...student, 
           monthlyFee: student.monthly_fee,
           classYear: student.class_year,
-          payments: studentPayments.map(p => ({
-            ...p,
-            date: p.payment_date,
-            monthKey: p.month_key,
-            paymentMethod: p.payment_method
-          }))
+          payments: studentPayments.map(normalizePayment)
         };
       });
       
@@ -113,8 +119,9 @@ export const StudentProvider = ({ children }) => {
   };
 
   const addPayment = async (studentId, amount, date, paymentMethod = 'offline') => {
-    const d = new Date(date);
-    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    // Prevent timezone issues from shifting the date to the previous month
+    const [year, month] = date.split('-');
+    const monthKey = `${year}-${month}`;
     
     const paymentRecord = {
       student_id: studentId,
@@ -134,12 +141,18 @@ export const StudentProvider = ({ children }) => {
     }
     
     const paymentObj = (data && data.length > 0) ? data[0] : { id: Date.now().toString(), ...paymentRecord };
+    const normalizedPayment = normalizePayment({
+      ...paymentObj,
+      payment_date: paymentObj.payment_date || paymentRecord.payment_date,
+      month_key: paymentObj.month_key || paymentRecord.month_key,
+      payment_method: paymentObj.payment_method || paymentRecord.payment_method
+    });
 
     setStudents(prev => prev.map(s => {
       if (s.id === studentId) {
         return {
           ...s,
-          payments: [...(s.payments || []), { ...paymentObj, date: paymentObj.payment_date, monthKey: paymentObj.month_key, paymentMethod: paymentObj.payment_method }]
+          payments: [...(s.payments || []), normalizedPayment]
         };
       }
       return s;

@@ -5,7 +5,12 @@ import ConfirmModal from './ConfirmModal';
 const PaymentModal = ({ isOpen, onClose, student }) => {
   const { addPayment, deletePayment, currentMonthKey } = useContext(StudentContext);
   const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const getLocalDateString = () => {
+    const now = new Date();
+    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    return local.toISOString().split('T')[0];
+  };
+  const [date, setDate] = useState(getLocalDateString);
   const [paymentMethod, setPaymentMethod] = useState('offline');
   const [paymentToDelete, setPaymentToDelete] = useState(null);
 

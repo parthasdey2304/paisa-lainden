@@ -15,18 +15,24 @@ export const fetchStudents = async () => {
   if (paymentError) throw paymentError;
 
   // Merge payments into each student
+  const normalizePayment = (payment) => {
+    const dateValue = payment.payment_date || payment.date || null;
+    const monthFromDate = typeof dateValue === 'string' ? dateValue.slice(0, 7) : null;
+    return {
+      ...payment,
+      date: dateValue,
+      monthKey: monthFromDate || payment.month_key || payment.monthKey || null,
+      paymentMethod: payment.payment_method || payment.paymentMethod,
+    };
+  };
+
   const merged = (studentsData || []).map((s) => {
     const pay = (paymentsData || []).filter((p) => p.student_id === s.id);
     return {
       ...s,
       monthlyFee: s.monthly_fee,
       classYear: s.class_year,
-      payments: pay.map((p) => ({
-        ...p,
-        date: p.payment_date,
-        monthKey: p.month_key,
-        paymentMethod: p.payment_method,
-      })),
+      payments: pay.map(normalizePayment),
     };
   });
   return merged;
@@ -67,8 +73,9 @@ export const deleteStudent = async (id) => {
 
 /** Add a payment for a student */
 export const addPayment = async (studentId, amount, date, paymentMethod = 'offline') => {
-  const d = new Date(date);
-  const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  // Prevent timezone issues from shifting the date to the previous month
+  const [year, month] = date.split('-');
+  const monthKey = `${year}-${month}`;
   const payload = {
     student_id: studentId,
     amount: Number(amount),
@@ -87,12 +94,16 @@ export const fetchPayments = async (studentId = null) => {
   if (studentId) query = query.eq('student_id', studentId);
   const { data, error } = await query;
   if (error) throw error;
-  return data.map((p) => ({
-    ...p,
-    date: p.payment_date,
-    monthKey: p.month_key,
-    paymentMethod: p.payment_method,
-  }));
+  return data.map((payment) => {
+    const dateValue = payment.payment_date || payment.date || null;
+    const monthFromDate = typeof dateValue === 'string' ? dateValue.slice(0, 7) : null;
+    return {
+      ...payment,
+      date: dateValue,
+      monthKey: monthFromDate || payment.month_key || payment.monthKey || null,
+      paymentMethod: payment.payment_method || payment.paymentMethod,
+    };
+  });
 };
 
 /** Delete a payment */
