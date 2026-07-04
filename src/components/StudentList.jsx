@@ -1,10 +1,59 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
+import { createRoot } from 'react-dom/client';
+import html2pdf from 'html2pdf.js';
 import { StudentContext } from '../context/StudentContext';
 import ConfirmModal from './ConfirmModal';
+import InvoiceDocument from './InvoiceDocument';
 
 const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
   const { students, selectedMonth, currentMonthKey, deleteStudent } = useContext(StudentContext);
   const [studentToDelete, setStudentToDelete] = useState(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const closeDropdowns = (e) => {
+      if (!e.target.closest('.paid-dropdown')) {
+        document.querySelectorAll('.paid-dropdown-menu').forEach(el => el.style.display = 'none');
+      }
+    };
+    document.addEventListener('click', closeDropdowns);
+    return () => document.removeEventListener('click', closeDropdowns);
+  }, []);
+
+  const handleDownloadInvoice = (student) => {
+    const payment = student.payments.find(p => p.monthKey === selectedMonth);
+    if (!payment) return;
+    
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const selectedMonthIndex = selectedMonth ? parseInt(selectedMonth.split('-')[1], 10) - 1 : new Date().getMonth();
+    const currentMonthName = monthNames[selectedMonthIndex];
+
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.top = '-9999px';
+    container.style.left = '-9999px';
+    document.body.appendChild(container);
+    
+    const root = createRoot(container);
+    root.render(<InvoiceDocument student={student} payment={payment} monthName={currentMonthName} />);
+    
+    setTimeout(() => {
+      const opt = {
+        margin:       0,
+        filename:     `${student.name}_Invoice_${selectedMonth}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
+      
+      html2pdf().set(opt).from(container.firstChild).save().then(() => {
+        setTimeout(() => {
+          root.unmount();
+          document.body.removeChild(container);
+        }, 100);
+      });
+    }, 800); // Wait for Google fonts to load
+  };
 
   const getFeeStatus = (student) => {
     const paidThisMonth = student.payments
@@ -15,7 +64,63 @@ const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
     const leftAmount = monthlyFee - paidThisMonth;
 
     if (paidThisMonth >= monthlyFee) {
-      return <span className="badge badge-success">Paid</span>;
+      return (
+        <div className="paid-dropdown" style={{ position: 'relative', display: 'inline-block' }}>
+          <button 
+            className="badge badge-success" 
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', fontFamily: 'inherit', margin: '0 auto' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              // Hide others
+              document.querySelectorAll('.paid-dropdown-menu').forEach(el => {
+                if (el !== e.currentTarget.nextSibling) el.style.display = 'none';
+              });
+              const dropdown = e.currentTarget.nextSibling;
+              dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+            }}
+          >
+            PAID <span style={{ fontSize: '0.6rem' }}>▼</span>
+          </button>
+          <div 
+            className="paid-dropdown-menu" 
+            style={{ 
+              display: 'none', 
+              position: 'absolute', 
+              top: '100%', 
+              left: '50%', 
+              transform: 'translateX(-50%)', 
+              background: 'var(--surface)', 
+              border: '2px solid var(--border)', 
+              zIndex: 10,
+              boxShadow: '4px 4px 0px var(--border)',
+              marginTop: '4px',
+              padding: '0'
+            }}
+          >
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                e.currentTarget.parentElement.style.display = 'none';
+                handleDownloadInvoice(student);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                fontWeight: 'bold',
+                width: '100%',
+                fontFamily: 'inherit'
+              }}
+              onMouseEnter={(e) => e.target.style.background = 'var(--warning)'}
+              onMouseLeave={(e) => e.target.style.background = 'transparent'}
+            >
+              Download Invoice
+            </button>
+          </div>
+        </div>
+      );
     }
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
@@ -57,7 +162,7 @@ const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
             <th className="hide-on-mobile">Subjects</th>
             <th>Monthly<br/>Fee</th>
             <th style={{ textAlign: 'center' }} className="hide-on-mobile">Fee Status ({selectedMonth})</th>
-            <th className="text-right">Actions</th>
+            <th className="text-center">Actions</th>
           </tr>
         </thead>
         <tbody>
