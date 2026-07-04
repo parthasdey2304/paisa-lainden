@@ -24,6 +24,8 @@ const Dashboard = () => {
     }
   });
 
+  const [activeTab, setActiveTab] = useState('list');
+
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const selectedMonthIndex = selectedMonth ? parseInt(selectedMonth.split('-')[1], 10) - 1 : new Date().getMonth();
   const currentMonthName = monthNames[selectedMonthIndex];
@@ -59,9 +61,16 @@ const Dashboard = () => {
   }, [showFeeNotification, notificationStatus, currentMonthKey, pendingStudents.length]);
 
   return (
-    <div className="mb-4 dashboard-layout">
-      <div className="dashboard-left">
-        {pendingStudents.length > 0 && (
+    <div>
+      <div className="nav-links" style={{ marginBottom: '2rem' }}>
+        <a href="#" className={activeTab === 'list' ? 'active' : ''} onClick={(e) => { e.preventDefault(); setActiveTab('list'); }}>Pending Students</a>
+        <a href="#" className={activeTab === 'stats' ? 'active' : ''} onClick={(e) => { e.preventDefault(); setActiveTab('stats'); }}>Statistics</a>
+      </div>
+
+      <div className="dashboard-layout" style={{ display: 'block' }}>
+        {activeTab === 'list' && (
+          <div className="dashboard-left" style={{ width: '100%' }}>
+            {pendingStudents.length > 0 && (
           <div className="card notification-card mb-4">
             <h3>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -103,8 +112,10 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+      )}
 
-      <div className="dashboard-right">
+      {activeTab === 'stats' && (
+      <div className="dashboard-right" style={{ width: '100%' }}>
         <div className="dashboard-grid">
           <div className="card stat-card mb-0">
             <div className="stat-icon">
@@ -146,6 +157,8 @@ const Dashboard = () => {
             <div className="stat-label">Total Expected (Monthly)</div>
           </div>
         </div>
+      </div>
+      )}
       </div>
     </div>
   );
