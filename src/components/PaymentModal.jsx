@@ -4,6 +4,7 @@ import ConfirmModal from './ConfirmModal';
 
 const PaymentModal = ({ isOpen, onClose, student }) => {
   const { addPayment, deletePayment, currentMonthKey } = useContext(StudentContext);
+  const [selectedMonthKey, setSelectedMonthKey] = useState(currentMonthKey);
   const [amount, setAmount] = useState('');
   const getLocalDateString = () => {
     const now = new Date();
@@ -14,20 +15,28 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
   const [paymentMethod, setPaymentMethod] = useState('offline');
   const [paymentToDelete, setPaymentToDelete] = useState(null);
 
+  const formatMonthKey = (key) => {
+    if (!key) return '';
+    const [year, month] = key.split('-');
+    const date = new Date(year, month - 1, 1);
+    return `${date.toLocaleString('default', { month: 'long' })} ${year}`;
+  };
+
   if (!isOpen || !student) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!amount || amount <= 0) return;
-    addPayment(student.id, amount, date, paymentMethod);
+    addPayment(student.id, amount, date, paymentMethod, selectedMonthKey);
     setAmount('');
     setPaymentMethod('offline');
+    setSelectedMonthKey(currentMonthKey);
     onClose();
   };
 
   const getPaidThisMonth = () => {
     return student.payments
-      .filter(p => p.monthKey === currentMonthKey)
+      .filter(p => p.monthKey === selectedMonthKey)
       .reduce((sum, p) => sum + p.amount, 0);
   };
 
@@ -47,7 +56,7 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
             <strong>₹{student.monthlyFee}</strong>
           </div>
           <div className="flex justify-between mb-2">
-            <span className="text-muted">Paid This Month:</span>
+            <span className="text-muted">Paid for Selected Month:</span>
             <strong style={{ color: 'var(--success)' }}>₹{getPaidThisMonth()}</strong>
           </div>
           <div className="flex justify-between pt-2" style={{ borderTop: '1px solid var(--border)' }}>
@@ -57,6 +66,24 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
         </div>
 
         <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Payment For Month</label>
+            <select 
+              className="form-control" 
+              value={selectedMonthKey} 
+              onChange={(e) => setSelectedMonthKey(e.target.value)}
+            >
+              {Array.from({ length: 12 }).map((_, i) => {
+                const d = new Date();
+                d.setMonth(d.getMonth() - i);
+                const year = d.getFullYear();
+                const monthNum = String(d.getMonth() + 1).padStart(2, '0');
+                const monthName = d.toLocaleString('default', { month: 'long' });
+                const monthKey = `${year}-${monthNum}`;
+                return <option key={monthKey} value={monthKey}>{monthName} {year}</option>;
+              })}
+            </select>
+          </div>
           <div className="form-group">
             <label>Payment Amount (₹)</label>
             <input 
@@ -106,7 +133,7 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
                     <span style={{ marginRight: '1rem' }}>{new Date(p.date).toLocaleDateString()}</span>
                     <strong>₹{p.amount}</strong>
                     <span style={{ marginLeft: '1rem', fontSize: '0.8rem', color: 'var(--muted)' }}>
-                      ({p.paymentMethod || p.payment_method || 'offline'})
+                      (For: {formatMonthKey(p.monthKey)}) ({p.paymentMethod || p.payment_method || 'offline'})
                     </span>
                   </div>
                   <button 

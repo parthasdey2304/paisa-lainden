@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 
 export const StudentContext = createContext();
@@ -7,13 +7,17 @@ export const StudentProvider = ({ children }) => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const todayDate = new Date();
+  const currentMonthKey = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}`;
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthKey);
+
   const normalizePayment = (payment) => {
     const dateValue = payment.payment_date || payment.date || null;
     const monthFromDate = typeof dateValue === 'string' ? dateValue.slice(0, 7) : null;
     return {
       ...payment,
       date: dateValue,
-      monthKey: monthFromDate || payment.month_key || payment.monthKey || null,
+      monthKey: payment.month_key || payment.monthKey || monthFromDate || null,
       paymentMethod: payment.payment_method || payment.paymentMethod
     };
   };
@@ -118,10 +122,13 @@ export const StudentProvider = ({ children }) => {
     setStudents(prev => prev.filter(s => s.id !== id));
   };
 
-  const addPayment = async (studentId, amount, date, paymentMethod = 'offline') => {
-    // Prevent timezone issues from shifting the date to the previous month
-    const [year, month] = date.split('-');
-    const monthKey = `${year}-${month}`;
+  const addPayment = async (studentId, amount, date, paymentMethod = 'offline', customMonthKey = null) => {
+    // If a custom month is provided (e.g. from the UI), use it. Otherwise, default to the payment date's month
+    let monthKey = customMonthKey;
+    if (!monthKey) {
+      const [year, month] = date.split('-');
+      monthKey = `${year}-${month}`;
+    }
     
     const paymentRecord = {
       student_id: studentId,
@@ -181,17 +188,15 @@ export const StudentProvider = ({ children }) => {
   };
 
   // Helper logic for dashboard
-  const currentMonthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
-  
   const totalStudents = students.length;
   
   // Total fees expected this month
   const totalExpectedFees = students.reduce((sum, s) => sum + Number(s.monthlyFee || 0), 0);
   
-  // Total fees collected this month
+  // Total fees collected for the selected month
   const collectedThisMonth = students.reduce((sum, s) => {
-    const currentMonthPayments = (s.payments || []).filter(p => p.monthKey === currentMonthKey);
-    return sum + currentMonthPayments.reduce((pSum, p) => pSum + Number(p.amount), 0);
+    const selectedMonthPayments = (s.payments || []).filter(p => p.monthKey === selectedMonth);
+    return sum + selectedMonthPayments.reduce((pSum, p) => pSum + Number(p.amount), 0);
   }, 0);
 
   const pendingFees = Math.max(0, totalExpectedFees - collectedThisMonth);
@@ -202,17 +207,16 @@ export const StudentProvider = ({ children }) => {
     return sum + allPayments.reduce((pSum, p) => pSum + Number(p.amount), 0);
   }, 0);
 
-  // Students who haven't fully paid this month
+  // Students who haven't fully paid for the selected month
   const pendingStudents = students.filter(s => {
     const paidThisMonth = (s.payments || [])
-      .filter(p => p.monthKey === currentMonthKey)
+      .filter(p => p.monthKey === selectedMonth)
       .reduce((sum, p) => sum + Number(p.amount), 0);
     return paidThisMonth < Number(s.monthlyFee || 0);
   });
 
-  // Notification Logic
-  const todayDate = new Date().getDate();
-  const showFeeNotification = todayDate >= 5 && pendingStudents.length > 0;
+  // Notification Logic (always based on real current month)
+  const showFeeNotification = todayDate.getDate() >= 5 && selectedMonth === currentMonthKey && pendingStudents.length > 0;
 
   return (
     <StudentContext.Provider value={{
@@ -230,6 +234,8 @@ export const StudentProvider = ({ children }) => {
       pendingStudents,
       showFeeNotification,
       currentMonthKey,
+      selectedMonth,
+      setSelectedMonth,
       totalRevenue
     }}>
       {children}

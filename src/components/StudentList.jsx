@@ -2,13 +2,13 @@ import React, { useContext, useState } from 'react';
 import { StudentContext } from '../context/StudentContext';
 import ConfirmModal from './ConfirmModal';
 
-const StudentList = ({ onEdit, onPay }) => {
-  const { students, currentMonthKey, deleteStudent } = useContext(StudentContext);
+const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
+  const { students, selectedMonth, currentMonthKey, deleteStudent } = useContext(StudentContext);
   const [studentToDelete, setStudentToDelete] = useState(null);
 
   const getFeeStatus = (student) => {
     const paidThisMonth = student.payments
-      .filter(p => p.monthKey === currentMonthKey)
+      .filter(p => p.monthKey === selectedMonth)
       .reduce((sum, p) => sum + p.amount, 0);
 
     const monthlyFee = Number(student.monthlyFee);
@@ -25,12 +25,18 @@ const StudentList = ({ onEdit, onPay }) => {
     );
   };
 
-  const sortedStudents = [...students].sort((a, b) => {
+  const filteredStudents = students.filter(s => {
+    if (!searchQuery) return true;
+    const lowerQuery = searchQuery.toLowerCase();
+    return s.name?.toLowerCase().includes(lowerQuery) || s.phone?.includes(lowerQuery);
+  });
+
+  const sortedStudents = [...filteredStudents].sort((a, b) => {
     const aPaidThisMonth = (a.payments || [])
-      .filter(p => p.monthKey === currentMonthKey)
+      .filter(p => p.monthKey === selectedMonth)
       .reduce((sum, p) => sum + p.amount, 0);
     const bPaidThisMonth = (b.payments || [])
-      .filter(p => p.monthKey === currentMonthKey)
+      .filter(p => p.monthKey === selectedMonth)
       .reduce((sum, p) => sum + p.amount, 0);
     
     const aIsPaid = aPaidThisMonth >= Number(a.monthlyFee);
@@ -50,7 +56,7 @@ const StudentList = ({ onEdit, onPay }) => {
             <th className="hide-on-mobile">Contact</th>
             <th className="hide-on-mobile">Subjects</th>
             <th>Monthly<br/>Fee</th>
-            <th style={{ textAlign: 'center' }} className="hide-on-mobile">Fee Status (Current)</th>
+            <th style={{ textAlign: 'center' }} className="hide-on-mobile">Fee Status ({selectedMonth})</th>
             <th className="text-right">Actions</th>
           </tr>
         </thead>

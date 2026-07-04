@@ -21,7 +21,7 @@ export const fetchStudents = async () => {
     return {
       ...payment,
       date: dateValue,
-      monthKey: monthFromDate || payment.month_key || payment.monthKey || null,
+      monthKey: payment.month_key || payment.monthKey || monthFromDate || null,
       paymentMethod: payment.payment_method || payment.paymentMethod,
     };
   };
@@ -72,10 +72,13 @@ export const deleteStudent = async (id) => {
 };
 
 /** Add a payment for a student */
-export const addPayment = async (studentId, amount, date, paymentMethod = 'offline') => {
-  // Prevent timezone issues from shifting the date to the previous month
-  const [year, month] = date.split('-');
-  const monthKey = `${year}-${month}`;
+export const addPayment = async (studentId, amount, date, paymentMethod = 'offline', customMonthKey = null) => {
+  // If a custom month is provided, use it. Otherwise, default to the payment date's month
+  let monthKey = customMonthKey;
+  if (!monthKey) {
+    const [year, month] = date.split('-');
+    monthKey = `${year}-${month}`;
+  }
   const payload = {
     student_id: studentId,
     amount: Number(amount),
@@ -100,7 +103,7 @@ export const fetchPayments = async (studentId = null) => {
     return {
       ...payment,
       date: dateValue,
-      monthKey: monthFromDate || payment.month_key || payment.monthKey || null,
+      monthKey: payment.month_key || payment.monthKey || monthFromDate || null,
       paymentMethod: payment.payment_method || payment.paymentMethod,
     };
   });
