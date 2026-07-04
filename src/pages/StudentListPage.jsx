@@ -14,7 +14,7 @@ const StudentListPage = () => {
   
   const location = useLocation();
   const navigate = useNavigate();
-  const { students } = useContext(StudentContext);
+  const { students, loading } = useContext(StudentContext);
   const editingStudent = students.find(s => s.id === editingStudentId) || null;
   const payingStudent = students.find(s => s.id === payingStudentId) || null;
 
@@ -79,11 +79,33 @@ const StudentListPage = () => {
       </div>
       
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <StudentList 
-          onEdit={handleEditStudent} 
-          onPay={handlePayFees} 
-          searchQuery={searchQuery}
-        />
+        {loading ? (
+          <div 
+            style={{ 
+              padding: '2rem', 
+              minHeight: '350px', 
+              background: 'var(--warning)', 
+              border: '4px solid var(--border)',
+              boxShadow: '6px 6px 0px var(--border)',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              margin: '20px'
+            }}
+          >
+            <img 
+              src="https://cdn.dribbble.com/userupload/22569723/file/original-a121107ab8231c9e9be60c6593ee33f9.gif" 
+              alt="Loading data..."
+              style={{ width: '200px', height: 'auto', borderRadius: '12px', border: '4px solid var(--border)', boxShadow: '6px 6px 0px var(--border)' }}
+            />
+          </div>
+        ) : (
+          <StudentList 
+            onEdit={handleEditStudent} 
+            onPay={handlePayFees} 
+            searchQuery={searchQuery}
+          />
+        )}
       </div>
 
       <StudentModal 

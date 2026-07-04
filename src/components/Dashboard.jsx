@@ -13,7 +13,8 @@ const Dashboard = () => {
     showFeeNotification,
     currentMonthKey,
     selectedMonth,
-    totalRevenue
+    totalRevenue,
+    loading
   } = useContext(StudentContext);
 
   const [notificationStatus, setNotificationStatus] = useState(() => {
@@ -69,7 +70,7 @@ const Dashboard = () => {
       </div>
 
       <div className="dashboard-layout" style={{ display: 'block' }}>
-        {activeTab === 'list' && (
+        {activeTab === 'list' && !loading && (
           <div className="dashboard-left" style={{ width: '100%' }}>
             {pendingStudents.length > 0 && (
           <div className="card notification-card mb-4">
@@ -131,20 +132,33 @@ const Dashboard = () => {
             })()}
           </div>
         )}
-
-        {notificationStatus === 'default' && (
-          <div className="card mb-4 flex justify-between items-center" style={{ background: '#eff6ff', borderColor: '#bfdbfe' }}>
-            <div>
-              <h3 style={{ color: '#1e40af', fontSize: '1rem', fontWeight: 600 }}>Enable Desktop Notifications</h3>
-              <p style={{ color: '#1e3a8a', fontSize: '0.875rem' }}>Get alerted on your desktop when it's time to collect fees.</p>
-            </div>
-            <button className="btn btn-primary" onClick={requestNotificationPermission}>Enable</button>
-          </div>
-        )}
       </div>
       )}
 
-      {activeTab === 'stats' && (
+      {activeTab === 'list' && loading && (
+        <div className="dashboard-left" style={{ width: '100%' }}>
+          <div 
+            style={{ 
+              padding: '2rem', 
+              minHeight: '350px', 
+              background: 'var(--warning)', 
+              border: '4px solid var(--border)',
+              boxShadow: '6px 6px 0px var(--border)',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}
+          >
+            <img 
+              src="https://cdn.dribbble.com/userupload/22569723/file/original-a121107ab8231c9e9be60c6593ee33f9.gif" 
+              alt="Loading data..."
+              style={{ width: '200px', height: 'auto', borderRadius: '12px', border: '4px solid var(--border)', boxShadow: '6px 6px 0px var(--border)' }}
+            />
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'stats' && !loading && (
       <div className="dashboard-right" style={{ width: '100%' }}>
         <div className="dashboard-grid">
           <div className="card stat-card mb-0">
@@ -188,6 +202,18 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      )}
+
+      {activeTab === 'stats' && loading && (
+        <div className="dashboard-right" style={{ width: '100%' }}>
+          <div className="dashboard-grid">
+            <div className="skeleton-box"></div>
+            <div className="skeleton-box"></div>
+            <div className="skeleton-box"></div>
+            <div className="skeleton-box"></div>
+            <div className="skeleton-box"></div>
+          </div>
+        </div>
       )}
       </div>
     </div>

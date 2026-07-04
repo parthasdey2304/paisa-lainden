@@ -5,6 +5,7 @@ import { StudentContext } from './context/StudentContext';
 import DashboardPage from './pages/DashboardPage';
 import StudentListPage from './pages/StudentListPage';
 import LoginPage from './components/LoginPage';
+import DesktopNotificationAlert from './components/DesktopNotificationAlert';
 import { isAuthenticated, login } from './utils/auth';
 import './index.css';
 
@@ -142,7 +143,8 @@ function App() {
 
   return (
     <StudentProvider>
-      <div className="app-container">
+      <div className="app-container" style={{ position: 'relative', overflow: 'hidden' }}>
+        <DesktopNotificationAlert />
         <header className="header">
           <h1>
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>

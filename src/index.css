@@ -596,3 +596,47 @@ tbody tr:hover {
   }
 }
 
+/* =========================================
+   ANIMATIONS: SKELETONS & SPLASH
+   ========================================= */
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.skeleton-box {
+  background: #e0e0e0;
+  background-image: linear-gradient(to right, #e0e0e0 0%, #f0f0f0 20%, #e0e0e0 40%, #e0e0e0 100%);
+  background-repeat: no-repeat;
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border: 4px solid var(--border);
+  box-shadow: 6px 6px 0px var(--border);
+  min-height: 150px;
+  width: 100%;
+}
+
+.skeleton-text {
+  height: 20px;
+  margin-bottom: 10px;
+  background: #e0e0e0;
+  background-image: linear-gradient(to right, #e0e0e0 0%, #f0f0f0 20%, #e0e0e0 40%, #e0e0e0 100%);
+  background-repeat: no-repeat;
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+@keyframes colorSplash {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(100);
+    opacity: 0;
+  }
+}
