@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import StudentListPage from './pages/StudentListPage';
 import LoginPage from './components/LoginPage';
 import DesktopNotificationAlert from './components/DesktopNotificationAlert';
+import InteractiveBackground from './components/InteractiveBackground';
 import { isAuthenticated, login } from './utils/auth';
 import './index.css';
 
@@ -144,6 +145,7 @@ function App() {
   return (
     <StudentProvider>
       <div className="app-container" style={{ position: 'relative', overflow: 'hidden' }}>
+        <InteractiveBackground />
         <DesktopNotificationAlert />
         <header className="header">
           <h1>
