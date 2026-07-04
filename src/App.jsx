@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { StudentProvider } from './context/StudentContext';
 import { StudentContext } from './context/StudentContext';
@@ -13,6 +13,7 @@ const MONTH_NAMES = [
 
 function MonthPicker() {
   const { selectedMonth, setSelectedMonth, currentMonthKey } = useContext(StudentContext);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [year, month] = selectedMonth.split('-').map(Number);
 
@@ -23,6 +24,29 @@ function MonthPicker() {
   };
 
   const isCurrentMonth = selectedMonth === currentMonthKey;
+
+  const dropdownOptions = Array.from({ length: 5 }, (_, i) => {
+    const delta = i - 2;
+    const d = new Date(year, month - 1 + delta, 1);
+    const mYear = d.getFullYear();
+    const mNum = String(d.getMonth() + 1).padStart(2, '0');
+    return {
+      key: `${mYear}-${mNum}`,
+      label: `${MONTH_NAMES[d.getMonth()]} ${mYear}`,
+      isNow: `${mYear}-${mNum}` === currentMonthKey
+    };
+  });
+
+  // Close dropdown if clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.month-picker__label')) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   return (
     <div className="month-picker">
@@ -36,10 +60,56 @@ function MonthPicker() {
         ‹
       </button>
 
-      <div className="month-picker__label">
+      <div 
+        className="month-picker__label" 
+        style={{ position: 'relative', cursor: 'pointer' }}
+        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+      >
         <span className="month-picker__name">{MONTH_NAMES[month - 1]}</span>
         <span className="month-picker__year">{year}</span>
         {isCurrentMonth && <span className="month-picker__badge">NOW</span>}
+        <span style={{ fontSize: '0.8rem', marginLeft: '0.5rem' }}>▼</span>
+
+        {isDropdownOpen && (
+          <div className="month-dropdown" style={{
+            position: 'absolute',
+            top: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'var(--surface)',
+            border: 'var(--border-width) solid var(--border)',
+            zIndex: 100,
+            width: '220px',
+            marginTop: '0.5rem',
+            boxShadow: '4px 4px 0px var(--border)'
+          }}>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {dropdownOptions.map((opt, idx) => (
+                <li 
+                  key={opt.key}
+                  style={{
+                    padding: '0.75rem',
+                    borderBottom: idx === 4 ? 'none' : '2px solid var(--border)',
+                    background: opt.key === selectedMonth ? 'var(--warning)' : 'transparent',
+                    textAlign: 'center',
+                    fontWeight: opt.key === selectedMonth ? 'bold' : 'normal',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedMonth(opt.key);
+                    setIsDropdownOpen(false);
+                  }}
+                >
+                  {opt.label} {opt.isNow && <span className="month-picker__badge" style={{ transform: 'scale(0.8)' }}>NOW</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       <button

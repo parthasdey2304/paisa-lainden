@@ -25,6 +25,7 @@ const Dashboard = () => {
   });
 
   const [activeTab, setActiveTab] = useState('list');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const selectedMonthIndex = selectedMonth ? parseInt(selectedMonth.split('-')[1], 10) - 1 : new Date().getMonth();
@@ -72,33 +73,62 @@ const Dashboard = () => {
           <div className="dashboard-left" style={{ width: '100%' }}>
             {pendingStudents.length > 0 && (
           <div className="card notification-card mb-4">
-            <h3>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              Pending Students List
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <h3>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Pending Students List
+              </h3>
+              <div className="desktop-search">
+                <input 
+                  type="text" 
+                  placeholder="Search students..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ 
+                    padding: '0.5rem 1rem', 
+                    border: 'var(--border-width) solid var(--border)', 
+                    fontFamily: 'inherit', 
+                    fontSize: '0.9rem',
+                    width: '250px'
+                  }}
+                />
+              </div>
+            </div>
             <p className="mt-4 text-sm text-yellow-800" style={{ marginBottom: '1rem' }}>
               The following students have pending fees for {currentMonthName}:
             </p>
-            <ul className="notification-list">
-              {pendingStudents.map(student => {
-                const paidThisMonth = (student.payments || [])
-                  .filter(p => p.monthKey === selectedMonth)
-                  .reduce((sum, p) => sum + Number(p.amount), 0);
-                const pendingAmount = Number(student.monthlyFee || 0) - paidThisMonth;
+            {(() => {
+              const filteredStudents = pendingStudents.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+              if (filteredStudents.length === 0) {
                 return (
-                  <li key={student.id}>
-                    <span><strong>{student.name}</strong></span>
-                    <button 
-                      className="btn" 
-                      style={{ background: 'var(--danger)', color: 'white', padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-                      onClick={() => navigate('/students', { state: { openPaymentFor: student.id } })}
-                    >
-                      Pending: ₹{pendingAmount > 0 ? pendingAmount : student.monthlyFee}
-                    </button>
-                  </li>
+                  <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--surface)', border: 'var(--border-width) solid var(--border)', fontWeight: 'bold' }}>
+                    No student with that name is present.
+                  </div>
                 );
-              })}
-            </ul>
+              }
+              return (
+                <ul className="notification-list">
+                  {filteredStudents.map(student => {
+                    const paidThisMonth = (student.payments || [])
+                      .filter(p => p.monthKey === selectedMonth)
+                      .reduce((sum, p) => sum + Number(p.amount), 0);
+                    const pendingAmount = Number(student.monthlyFee || 0) - paidThisMonth;
+                    return (
+                      <li key={student.id}>
+                        <span><strong>{student.name}</strong></span>
+                        <button 
+                          className="btn" 
+                          style={{ background: 'var(--danger)', color: 'white', padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                          onClick={() => navigate('/students', { state: { openPaymentFor: student.id } })}
+                        >
+                          Pending: ₹{pendingAmount > 0 ? pendingAmount : student.monthlyFee}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              );
+            })()}
           </div>
         )}
 

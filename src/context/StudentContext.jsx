@@ -152,7 +152,7 @@ export const StudentProvider = ({ children }) => {
       ...paymentObj,
       payment_date: paymentObj.payment_date || paymentRecord.payment_date,
       month_key: paymentObj.month_key || paymentRecord.month_key,
-      payment_method: paymentObj.payment_method || paymentRecord.payment_method
+      payment_method: paymentObj.payment_method || paymentMethod
     });
 
     setStudents(prev => prev.map(s => {
