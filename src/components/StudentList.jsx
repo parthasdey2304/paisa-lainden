@@ -4,10 +4,12 @@ import html2pdf from 'html2pdf.js';
 import { StudentContext } from '../context/StudentContext';
 import ConfirmModal from './ConfirmModal';
 import InvoiceDocument from './InvoiceDocument';
+import { uploadInvoiceToMeta, sendInvoiceMessage } from '../services/whatsappService';
 
 const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
   const { students, selectedMonth, currentMonthKey, deleteStudent } = useContext(StudentContext);
   const [studentToDelete, setStudentToDelete] = useState(null);
+  const [waSendingStatus, setWaSendingStatus] = useState({}); // { studentId: 'uploading' | 'sending' | 'success' | 'error' }
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -53,6 +55,72 @@ const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
         }, 100);
       });
     }, 800); // Wait for Google fonts to load
+  };
+
+  const handleSendWhatsApp = async (student) => {
+    const payment = student.payments.find(p => p.monthKey === selectedMonth);
+    if (!payment) return;
+    
+    if (!student.phone) {
+      alert("This student doesn't have a phone number on file.");
+      return;
+    }
+
+    setWaSendingStatus(prev => ({ ...prev, [student.id]: 'generating' }));
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const selectedMonthIndex = selectedMonth ? parseInt(selectedMonth.split('-')[1], 10) - 1 : new Date().getMonth();
+    const currentMonthName = monthNames[selectedMonthIndex];
+
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.top = '-9999px';
+    container.style.left = '-9999px';
+    document.body.appendChild(container);
+    
+    const root = createRoot(container);
+    root.render(<InvoiceDocument student={student} payment={payment} monthName={currentMonthName} />);
+    
+    setTimeout(async () => {
+      try {
+        const opt = {
+          margin:       0,
+          filename:     `${student.name}_Invoice_${selectedMonth}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2 },
+          jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        
+        // Output as Blob instead of downloading
+        const pdfBlob = await html2pdf().set(opt).from(container.firstChild).output('blob');
+        
+        root.unmount();
+        document.body.removeChild(container);
+
+        setWaSendingStatus(prev => ({ ...prev, [student.id]: 'uploading' }));
+        const mediaId = await uploadInvoiceToMeta(pdfBlob);
+
+        setWaSendingStatus(prev => ({ ...prev, [student.id]: 'sending' }));
+        await sendInvoiceMessage(student.phone, mediaId);
+
+        setWaSendingStatus(prev => ({ ...prev, [student.id]: 'success' }));
+        alert(`Successfully sent WhatsApp invoice to ${student.name}!`);
+        
+        // Reset status after a few seconds
+        setTimeout(() => {
+          setWaSendingStatus(prev => ({ ...prev, [student.id]: null }));
+        }, 3000);
+
+      } catch (err) {
+        console.error("WhatsApp API Error:", err);
+        setWaSendingStatus(prev => ({ ...prev, [student.id]: 'error' }));
+        alert(`Failed to send WhatsApp message. Error: ${err.message}`);
+        
+        setTimeout(() => {
+          setWaSendingStatus(prev => ({ ...prev, [student.id]: null }));
+        }, 3000);
+      }
+    }, 800);
   };
 
   const getFeeStatus = (student) => {
@@ -117,6 +185,38 @@ const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
               onMouseLeave={(e) => e.target.style.background = 'transparent'}
             >
               Download Invoice
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                e.currentTarget.parentElement.style.display = 'none';
+                handleSendWhatsApp(student);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                borderTop: '2px solid var(--border)',
+                padding: '8px 16px',
+                cursor: waSendingStatus[student.id] ? 'not-allowed' : 'pointer',
+                whiteSpace: 'nowrap',
+                fontWeight: 'bold',
+                width: '100%',
+                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+              disabled={!!waSendingStatus[student.id]}
+              onMouseEnter={(e) => !waSendingStatus[student.id] && (e.target.style.background = 'var(--warning)')}
+              onMouseLeave={(e) => e.target.style.background = 'transparent'}
+            >
+              {waSendingStatus[student.id] === 'generating' && '📄 Generating...'}
+              {waSendingStatus[student.id] === 'uploading' && '⬆️ Uploading...'}
+              {waSendingStatus[student.id] === 'sending' && '💬 Sending...'}
+              {waSendingStatus[student.id] === 'success' && '✅ Sent!'}
+              {waSendingStatus[student.id] === 'error' && '❌ Error'}
+              {!waSendingStatus[student.id] && '📱 Send via WhatsApp'}
             </button>
           </div>
         </div>
