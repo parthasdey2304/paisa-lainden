@@ -4,6 +4,8 @@ import { StudentProvider } from './context/StudentContext';
 import { StudentContext } from './context/StudentContext';
 import DashboardPage from './pages/DashboardPage';
 import StudentListPage from './pages/StudentListPage';
+import LoginPage from './components/LoginPage';
+import { isAuthenticated, login } from './utils/auth';
 import './index.css';
 
 const MONTH_NAMES = [
@@ -129,6 +131,14 @@ function MonthPicker() {
 
 function App() {
   const location = useLocation();
+  const [isLoggedIn, setIsLoggedIn] = useState(() => isAuthenticated());
+
+  if (!isLoggedIn) {
+    return <LoginPage onLoginSuccess={() => {
+      login();
+      setIsLoggedIn(true);
+    }} />;
+  }
 
   return (
     <StudentProvider>
