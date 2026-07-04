@@ -21,6 +21,14 @@
   --shadow-hover: 2px 2px 0px 0px var(--border);
 }
 
+[data-theme='dark'] {
+  --background: #121212;
+  --surface: #1e1e1e;
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --border: #f3f4f6;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -53,6 +61,17 @@ body {
   box-shadow: var(--shadow);
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .desktop-only {
+    display: none !important;
+  }
 }
 
 @media (max-width: 600px) {

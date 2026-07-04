@@ -7,6 +7,7 @@ import StudentListPage from './pages/StudentListPage';
 import LoginPage from './components/LoginPage';
 import DesktopNotificationAlert from './components/DesktopNotificationAlert';
 import InteractiveBackground from './components/InteractiveBackground';
+import ThemeControls from './components/ThemeControls';
 import { isAuthenticated, login } from './utils/auth';
 import './index.css';
 
@@ -134,6 +135,32 @@ function MonthPicker() {
 function App() {
   const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(() => isAuthenticated());
+  
+  // Theme State
+  const [isDark, setIsDark] = useState(() => {
+    return localStorage.getItem('theme-dark') === 'true';
+  });
+  const [themeColor, setThemeColor] = useState('#facc15'); // Default to yellow
+
+  // Apply Theme
+  useEffect(() => {
+    // 1. Update the primary accent color across the app
+    document.documentElement.style.setProperty('--warning', themeColor);
+
+    if (isDark) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      // Mix the chosen color with 85% dark off-black for dark mode
+      document.documentElement.style.setProperty('--background', `color-mix(in srgb, ${themeColor} 15%, #050500)`);
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      // Mix the chosen color with 80% white to create a pale pastel background for light mode
+      document.documentElement.style.setProperty('--background', `color-mix(in srgb, ${themeColor} 20%, #ffffff)`);
+    }
+    
+    // Persist ONLY dark mode to local storage (Color reverts on refresh)
+    localStorage.setItem('theme-dark', isDark);
+    localStorage.removeItem('theme-color'); // Clean up old saved color
+  }, [isDark, themeColor]);
 
   if (!isLoggedIn) {
     return <LoginPage onLoginSuccess={() => {
@@ -145,6 +172,12 @@ function App() {
   return (
     <StudentProvider>
       <div className="app-container" style={{ position: 'relative', overflow: 'hidden' }}>
+        <ThemeControls 
+          isDark={isDark} 
+          setIsDark={setIsDark} 
+          themeColor={themeColor} 
+          setThemeColor={setThemeColor} 
+        />
         <InteractiveBackground />
         <DesktopNotificationAlert />
         <header className="header">
