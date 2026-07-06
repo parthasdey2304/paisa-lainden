@@ -181,14 +181,45 @@ function App() {
         <InteractiveBackground />
         <DesktopNotificationAlert />
         <header className="header">
-          <h1>
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-            StudentManager
-          </h1>
+          {/* Logo + mobile dark mode toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <h1>
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+              StudentManager
+            </h1>
+
+            {/* Mobile-only dark/light mode toggle */}
+            <button
+              className="mobile-only btn"
+              onClick={() => setIsDark(!isDark)}
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              style={{
+                padding: '0.4rem',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'var(--surface)',
+                border: '3px solid var(--border)',
+                boxShadow: '3px 3px 0px var(--border)',
+                width: '40px',
+                height: '40px',
+                flexShrink: 0,
+              }}
+            >
+              {isDark ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-main)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              )}
+            </button>
+          </div>
+
+          {/* Center nav — on desktop this becomes the center grid column */}
           <nav className="nav-links">
             <Link to="/" className={location.pathname === '/' ? 'active' : ''}>Dashboard</Link>
             <Link to="/students" className={location.pathname === '/students' ? 'active' : ''}>Students</Link>
           </nav>
+
+          {/* Month Picker — on desktop this becomes the right grid column */}
           <MonthPicker />
         </header>
 

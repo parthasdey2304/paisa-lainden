@@ -63,6 +63,28 @@ body {
   gap: 1rem;
 }
 
+/* Desktop: single row with 3-column grid — logo left | nav center | month right */
+@media (min-width: 769px) {
+  .header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    flex-wrap: unset;
+  }
+  .header > div { /* logo+toggle wrapper */
+    grid-column: 1;
+    justify-self: start;
+  }
+  .header > nav { /* nav links */
+    grid-column: 2;
+    justify-self: center;
+  }
+  .header > .month-picker { /* month picker */
+    grid-column: 3;
+    justify-self: end;
+  }
+}
+
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
@@ -527,8 +549,8 @@ tbody tr:hover {
 }
 @media (max-width: 768px) {
   .mobile-only {
-    display: block;
-    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
   }
 }
 

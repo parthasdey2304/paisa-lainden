@@ -95,8 +95,8 @@ const Dashboard = () => {
           <a href="#" className={activeTab === 'stats' ? 'active' : ''} onClick={(e) => { e.preventDefault(); setActiveTab('stats'); }}>Statistics</a>
         </div>
 
-        {/* Export Report dropdown */}
-        <div style={{ position: 'relative' }} ref={exportMenuRef}>
+        {/* Export Report dropdown — desktop only (hidden on mobile via CSS) */}
+        <div className="desktop-only" style={{ position: 'relative' }} ref={exportMenuRef}>
           <button
             className="btn"
             style={{
