@@ -122,7 +122,7 @@ export const StudentProvider = ({ children }) => {
     setStudents(prev => prev.filter(s => s.id !== id));
   };
 
-  const addPayment = async (studentId, amount, date, paymentMethod = 'offline', customMonthKey = null) => {
+  const addPayment = async (studentId, amount, date, paymentMethod = 'online', customMonthKey = null) => {
     // If a custom month is provided (e.g. from the UI), use it. Otherwise, default to the payment date's month
     let monthKey = customMonthKey;
     if (!monthKey) {
@@ -135,7 +135,6 @@ export const StudentProvider = ({ children }) => {
       amount: Number(amount),
       payment_date: date,
       month_key: monthKey
-      // payment_method removed because it doesn't exist in the remote database yet
     };
 
     const { data, error } = await supabase

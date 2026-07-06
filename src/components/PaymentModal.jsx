@@ -12,7 +12,7 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
     return local.toISOString().split('T')[0];
   };
   const [date, setDate] = useState(getLocalDateString);
-  const [paymentMethod, setPaymentMethod] = useState('offline');
+  const [paymentMethod, setPaymentMethod] = useState('online');
   const [paymentToDelete, setPaymentToDelete] = useState(null);
 
   const formatMonthKey = (key) => {
@@ -29,7 +29,7 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
     if (!amount || amount <= 0) return;
     addPayment(student.id, amount, date, paymentMethod, selectedMonthKey);
     setAmount('');
-    setPaymentMethod('offline');
+    setPaymentMethod('online');
     setSelectedMonthKey(currentMonthKey);
     onClose();
   };
@@ -50,7 +50,7 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
           <button className="close-btn" onClick={onClose}>&times;</button>
         </div>
 
-        <div className="mb-4 p-4" style={{ background: '#f8fafc', borderRadius: '0.5rem', border: '1px solid var(--border)' }}>
+        <div className="mb-4 p-4" style={{ background: 'var(--background)', borderRadius: '0.5rem', border: '1px solid var(--border)' }}>
           <div className="flex justify-between mb-2">
             <span className="text-muted">Monthly Fee:</span>
             <strong>₹{student.monthlyFee}</strong>
@@ -113,7 +113,6 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
               value={paymentMethod} 
               onChange={(e) => setPaymentMethod(e.target.value)}
             >
-              <option value="offline">Offline / Cash</option>
               <option value="online">Online / UPI</option>
             </select>
           </div>
@@ -133,7 +132,7 @@ const PaymentModal = ({ isOpen, onClose, student }) => {
                     <span style={{ marginRight: '1rem' }}>{new Date(p.date).toLocaleDateString()}</span>
                     <strong>₹{p.amount}</strong>
                     <span style={{ marginLeft: '1rem', fontSize: '0.8rem', color: 'var(--muted)' }}>
-                      (For: {formatMonthKey(p.monthKey)}) ({p.paymentMethod || p.payment_method || 'offline'})
+                      (For: {formatMonthKey(p.monthKey)}) ({p.paymentMethod || p.payment_method || 'online'})
                     </span>
                   </div>
                   <button 

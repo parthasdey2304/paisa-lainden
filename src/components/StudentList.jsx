@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+import { renderToString } from 'react-dom/server';
 import html2pdf from 'html2pdf.js';
 import { StudentContext } from '../context/StudentContext';
 import ConfirmModal from './ConfirmModal';
@@ -25,19 +26,14 @@ const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
   const handleDownloadInvoice = (student) => {
     const payment = student.payments.find(p => p.monthKey === selectedMonth);
     if (!payment) return;
-    
+
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const selectedMonthIndex = selectedMonth ? parseInt(selectedMonth.split('-')[1], 10) - 1 : new Date().getMonth();
     const currentMonthName = monthNames[selectedMonthIndex];
 
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.top = '-9999px';
-    container.style.left = '-9999px';
-    document.body.appendChild(container);
-    
-    const root = createRoot(container);
-    root.render(<InvoiceDocument student={student} payment={payment} monthName={currentMonthName} />);
+    const htmlContent = renderToString(
+      <InvoiceDocument student={student} payment={payment} monthName={currentMonthName} />
+    );
     
     setTimeout(() => {
       const opt = {
@@ -48,13 +44,12 @@ const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
         jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
       };
       
-      html2pdf().set(opt).from(container.firstChild).save().then(() => {
-        setTimeout(() => {
-          root.unmount();
-          document.body.removeChild(container);
-        }, 100);
-      });
-    }, 800); // Wait for Google fonts to load
+      html2pdf().set(opt).from(htmlContent).save()
+        .catch(err => {
+          console.error("PDF Invoice Error:", err);
+          alert("Failed to generate PDF. There might be an unsupported CSS feature or browser extension interfering.");
+        });
+    }, 100); 
   };
 
   const handleSendWhatsApp = async (student) => {
@@ -94,9 +89,6 @@ const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
         // Output as Blob instead of downloading
         const pdfBlob = await html2pdf().set(opt).from(container.firstChild).output('blob');
         
-        root.unmount();
-        document.body.removeChild(container);
-
         setWaSendingStatus(prev => ({ ...prev, [student.id]: 'uploading' }));
         const mediaId = await uploadInvoiceToMeta(pdfBlob);
 
@@ -106,19 +98,17 @@ const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
         setWaSendingStatus(prev => ({ ...prev, [student.id]: 'success' }));
         alert(`Successfully sent WhatsApp invoice to ${student.name}!`);
         
-        // Reset status after a few seconds
-        setTimeout(() => {
-          setWaSendingStatus(prev => ({ ...prev, [student.id]: null }));
-        }, 3000);
-
+        setTimeout(() => setWaSendingStatus(prev => ({ ...prev, [student.id]: null })), 3000);
       } catch (err) {
-        console.error("WhatsApp API Error:", err);
+        console.error("Error sending WhatsApp invoice:", err);
         setWaSendingStatus(prev => ({ ...prev, [student.id]: 'error' }));
-        alert(`Failed to send WhatsApp message. Error: ${err.message}`);
-        
-        setTimeout(() => {
-          setWaSendingStatus(prev => ({ ...prev, [student.id]: null }));
-        }, 3000);
+        alert("Failed to send WhatsApp invoice. Please try again.");
+        setTimeout(() => setWaSendingStatus(prev => ({ ...prev, [student.id]: null })), 3000);
+      } finally {
+        root.unmount();
+        if (document.body.contains(container)) {
+          document.body.removeChild(container);
+        }
       }
     }, 800);
   };

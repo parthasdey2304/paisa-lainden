@@ -83,7 +83,7 @@ const InvoiceDocument = forwardRef(({ student, payment, monthName }, ref) => {
             <strong>Amount in Words:</strong> {numberToWords(payment.amount)}
           </p>
           <p style={{ fontSize: '16px', margin: '0' }}>
-            <strong>Mode of Payment:</strong> <span style={{ textTransform: 'capitalize' }}>{payment.payment_method || payment.paymentMethod || 'Offline'}</span>
+            <strong>Mode of Payment:</strong> <span style={{ textTransform: 'capitalize' }}>{payment.payment_method || payment.paymentMethod || 'Online'}</span>
           </p>
         </div>
 

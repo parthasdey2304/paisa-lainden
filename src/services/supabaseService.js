@@ -72,7 +72,7 @@ export const deleteStudent = async (id) => {
 };
 
 /** Add a payment for a student */
-export const addPayment = async (studentId, amount, date, paymentMethod = 'offline', customMonthKey = null) => {
+export const addPayment = async (studentId, amount, date, paymentMethod = 'online', customMonthKey = null) => {
   // If a custom month is provided, use it. Otherwise, default to the payment date's month
   let monthKey = customMonthKey;
   if (!monthKey) {
