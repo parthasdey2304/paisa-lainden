@@ -1,9 +1,11 @@
 import React, { useContext, useState } from 'react';
 import { StudentContext } from '../context/StudentContext';
 import ExpenseModal from '../components/ExpenseModal';
+import ConfirmModal from '../components/ConfirmModal';
 
 function ExpensesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState(null);
   const { expenses, deleteExpense, selectedMonth } = useContext(StudentContext);
 
   // Optionally filter by selectedMonth if we want this page to be monthly,
@@ -17,10 +19,8 @@ function ExpensesPage() {
     .filter(e => e.month_key === selectedMonth)
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this expense?")) {
-      deleteExpense(id);
-    }
+  const handleDelete = (expense) => {
+    setExpenseToDelete(expense);
   };
 
   return (
@@ -71,7 +71,7 @@ function ExpensesPage() {
                   <td>{expense.month_key}</td>
                   <td>
                     <button 
-                      onClick={() => handleDelete(expense.id)}
+                      onClick={() => handleDelete(expense)}
                       className="btn btn-danger"
                       style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
                       title="Delete Expense"
@@ -88,6 +88,18 @@ function ExpensesPage() {
       <ExpenseModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
+      />
+      <ConfirmModal 
+        isOpen={!!expenseToDelete}
+        title="Delete Expense"
+        message="Are you sure you want to delete this expense? This action cannot be undone."
+        onConfirm={() => {
+          if (expenseToDelete) {
+            deleteExpense(expenseToDelete.id);
+            setExpenseToDelete(null);
+          }
+        }}
+        onCancel={() => setExpenseToDelete(null)}
       />
     </div>
   );
