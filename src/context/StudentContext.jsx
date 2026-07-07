@@ -5,6 +5,7 @@ export const StudentContext = createContext();
 
 export const StudentProvider = ({ children }) => {
   const [students, setStudents] = useState([]);
+  const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const todayDate = new Date();
@@ -36,6 +37,18 @@ export const StudentProvider = ({ children }) => {
         .select('*');
         
       if (paymentError) throw paymentError;
+
+      const { data: expensesData, error: expenseError } = await supabase
+        .from('expenses')
+        .select('*');
+        
+      if (expenseError) {
+        console.warn('Could not fetch expenses from Supabase. Falling back to local storage:', expenseError);
+        const savedExpenses = localStorage.getItem('student-manager-expenses');
+        setExpenses(savedExpenses ? JSON.parse(savedExpenses) : []);
+      } else {
+        setExpenses(expensesData || []);
+      }
 
       // merge payments into students
       const mergedStudents = (studentsData || []).map(student => {
@@ -186,6 +199,48 @@ export const StudentProvider = ({ children }) => {
     }));
   };
 
+  const addExpense = async (amount, description, date, monthKey) => {
+    const expenseRecord = {
+      amount: Number(amount),
+      description,
+      expense_date: date,
+      month_key: monthKey
+    };
+
+    const { data, error } = await supabase
+      .from('expenses')
+      .insert([expenseRecord])
+      .select();
+
+    if (error) {
+      console.warn('Error adding expense to Supabase. Saving locally instead:', error);
+    }
+
+    const expenseObj = (data && data.length > 0) ? data[0] : { id: Date.now().toString(), ...expenseRecord };
+    setExpenses(prev => {
+      const updatedExpenses = [...prev, expenseObj];
+      localStorage.setItem('student-manager-expenses', JSON.stringify(updatedExpenses));
+      return updatedExpenses;
+    });
+  };
+
+  const deleteExpense = async (expenseId) => {
+    const { error } = await supabase
+      .from('expenses')
+      .delete()
+      .eq('id', expenseId);
+
+    if (error) {
+      console.warn('Error deleting expense from Supabase. Deleting locally instead:', error);
+    }
+
+    setExpenses(prev => {
+      const updatedExpenses = prev.filter(e => e.id !== expenseId);
+      localStorage.setItem('student-manager-expenses', JSON.stringify(updatedExpenses));
+      return updatedExpenses;
+    });
+  };
+
   // Helper logic for dashboard
   const totalStudents = students.length;
   
@@ -220,12 +275,15 @@ export const StudentProvider = ({ children }) => {
   return (
     <StudentContext.Provider value={{
       students,
+      expenses,
       loading,
       addStudent,
       editStudent,
       deleteStudent,
       addPayment,
       deletePayment,
+      addExpense,
+      deleteExpense,
       totalStudents,
       totalExpectedFees,
       collectedThisMonth,

@@ -682,3 +682,107 @@ tbody tr:hover {
     opacity: 0;
   }
 }
+
+/* =========================================
+   FLOATING ACTION BUTTON (FAB)
+   ========================================= */
+.fab-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.fab-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-end;
+  animation: slideUp 0.2s ease-out forwards;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fab-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--surface);
+  color: var(--text-main);
+  border: var(--border-width) solid var(--border);
+  padding: 0.75rem 1.25rem;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 4px 4px 0px 0px var(--border);
+  transition: all 0.15s;
+}
+
+.fab-item:hover {
+  background: var(--warning);
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px var(--border);
+}
+
+.fab-item:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px 0px var(--border);
+}
+
+.fab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fab-button {
+  background: var(--primary);
+  color: white;
+  border: var(--border-width) solid var(--border);
+  width: 64px;
+  height: 64px;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 6px 6px 0px 0px var(--border);
+  transition: all 0.2s;
+}
+
+.fab-button:hover {
+  background: var(--primary-hover);
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0px 0px var(--border);
+}
+
+.fab-button:active, .fab-button.active {
+  transform: translate(6px, 6px);
+  box-shadow: 0px 0px 0px 0px var(--border);
+}
+
+.fab-button.active {
+  background: var(--warning);
+  color: black;
+}
+
+@media (max-width: 768px) {
+  .fab-container {
+    bottom: 1.5rem;
+    right: 1.5rem;
+  }
+  .fab-button {
+    width: 56px;
+    height: 56px;
+  }
+}
+

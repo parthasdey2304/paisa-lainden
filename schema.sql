@@ -35,3 +35,20 @@ CREATE POLICY "Enable read access for all users" ON payments FOR SELECT USING (t
 CREATE POLICY "Enable insert access for all users" ON payments FOR INSERT WITH CHECK (true);
 CREATE POLICY "Enable update access for all users" ON payments FOR UPDATE USING (true);
 CREATE POLICY "Enable delete access for all users" ON payments FOR DELETE USING (true);
+
+-- Create expenses table
+CREATE TABLE expenses (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  amount INTEGER NOT NULL,
+  description TEXT NOT NULL,
+  expense_date DATE NOT NULL,
+  month_key TEXT NOT NULL
+);
+
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Enable read access for all users" ON expenses FOR SELECT USING (true);
+CREATE POLICY "Enable insert access for all users" ON expenses FOR INSERT WITH CHECK (true);
+CREATE POLICY "Enable update access for all users" ON expenses FOR UPDATE USING (true);
+CREATE POLICY "Enable delete access for all users" ON expenses FOR DELETE USING (true);

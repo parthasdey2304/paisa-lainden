@@ -4,10 +4,12 @@ import { StudentProvider } from './context/StudentContext';
 import { StudentContext } from './context/StudentContext';
 import DashboardPage from './pages/DashboardPage';
 import StudentListPage from './pages/StudentListPage';
+import ExpensesPage from './pages/ExpensesPage';
 import LoginPage from './components/LoginPage';
 import DesktopNotificationAlert from './components/DesktopNotificationAlert';
 import InteractiveBackground from './components/InteractiveBackground';
 import ThemeControls from './components/ThemeControls';
+import FloatingActionMenu from './components/FloatingActionMenu';
 import { isAuthenticated, login } from './utils/auth';
 import './index.css';
 
@@ -227,8 +229,10 @@ function App() {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/students" element={<StudentListPage />} />
+            <Route path="/expenses" element={<ExpensesPage />} />
           </Routes>
         </main>
+        <FloatingActionMenu />
       </div>
     </StudentProvider>
   );

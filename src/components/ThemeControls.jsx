@@ -8,9 +8,10 @@ const ThemeControls = ({ isDark, setIsDark, themeColor, setThemeColor }) => {
       className="desktop-only"
       style={{
         position: 'fixed',
-        top: '1rem',
+        top: '6rem',
         right: '1rem',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         gap: '1rem',
         zIndex: 1000
@@ -22,9 +23,11 @@ const ThemeControls = ({ isDark, setIsDark, themeColor, setThemeColor }) => {
         style={{ 
           padding: '0.25rem', 
           display: 'flex', 
+          flexDirection: 'column',
           alignItems: 'center', 
           gap: '0.5rem',
-          background: 'var(--surface)'
+          background: 'var(--surface)',
+          marginBottom: '0'
         }}
         title="Change Background Color"
       >
@@ -43,7 +46,7 @@ const ThemeControls = ({ isDark, setIsDark, themeColor, setThemeColor }) => {
         />
         
         {/* Preset Swatches */}
-        <div style={{ display: 'flex', gap: '0.25rem', borderLeft: '2px solid var(--border)', paddingLeft: '0.5rem', marginLeft: '0.25rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', borderTop: '2px solid var(--border)', paddingTop: '0.5rem', marginTop: '0.25rem' }}>
           {presetColors.map(color => (
             <button
               key={color}
