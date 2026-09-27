@@ -1,5 +1,4 @@
-import fs from 'fs';
-import { fetchStudents } from './src/services/supabaseService.js';
+import { fetchStudents } from './src/services/firebaseService.js';
 
 async function test() {
   try {
@@ -18,12 +17,13 @@ async function test() {
     
     console.log("Pending students:", pendingStudents.map(s => ({
       name: s.name,
-      paid: (s.payments || []).filter(p => p.monthKey === currentMonthKey).reduce((a,b)=>a+Number(b.amount),0),
+      paid: (s.payments || []).filter(p => p.monthKey === currentMonthKey).reduce((a, b) => a + Number(b.amount), 0),
       expected: Number(s.monthlyFee || 0),
       payments: s.payments
     })));
-  } catch(e) {
+  } catch (e) {
     console.error(e);
   }
 }
+
 test();
