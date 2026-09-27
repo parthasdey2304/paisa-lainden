@@ -7,7 +7,7 @@ import InvoiceDocument from './InvoiceDocument';
 import { uploadInvoiceToMeta, sendInvoiceMessage } from '../services/whatsappService';
 
 const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
-  const { students, selectedMonth, currentMonthKey, deleteStudent } = useContext(StudentContext);
+  const { students, selectedMonth, deleteStudent } = useContext(StudentContext);
   const [studentToDelete, setStudentToDelete] = useState(null);
   const [waSendingStatus, setWaSendingStatus] = useState({}); // { studentId: 'uploading' | 'sending' | 'success' | 'error' }
 

@@ -300,6 +300,7 @@ export const restoreStudent = async (id) => {
   const deletedRef = doc(db, 'deleted_students', id);
   const deletedSnap = await getDoc(deletedRef);
   if (!deletedSnap.exists()) throw new Error('Student record not found in deleted archive.');
+  const deletedData = deletedSnap.data() || {};
   const { payments: savedPayments, ...studentPayload } = deletedData;
   delete studentPayload.deleted_at;
 

@@ -15,11 +15,10 @@ const Dashboard = () => {
     showFeeNotification,
     currentMonthKey,
     selectedMonth,
-    totalRevenue,
     loading
   } = useContext(StudentContext);
 
-  const [notificationStatus, setNotificationStatus] = useState(() => {
+  const [notificationStatus] = useState(() => {
     try {
       return 'Notification' in window ? Notification.permission : 'denied';
     } catch (e) {
@@ -56,17 +55,6 @@ const Dashboard = () => {
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const selectedMonthIndex = selectedMonth ? parseInt(selectedMonth.split('-')[1], 10) - 1 : new Date().getMonth();
   const currentMonthName = monthNames[selectedMonthIndex];
-
-  const requestNotificationPermission = async () => {
-    try {
-      if ('Notification' in window) {
-        const permission = await Notification.requestPermission();
-        setNotificationStatus(permission);
-      }
-    } catch (e) {
-      console.error('Notification permission error:', e);
-    }
-  };
 
   useEffect(() => {
     try {
