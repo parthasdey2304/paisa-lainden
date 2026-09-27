@@ -2,15 +2,45 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read/write access to students, payments, and expenses collections
+
+    // Helper functions for schema validation
+    function isValidStudent(data) {
+      return data.name is string && data.name.size() > 0
+          && data.phone is string && data.phone.size() > 0
+          && (data.monthly_fee is number && data.monthly_fee >= 0 || data.monthlyFee is number && data.monthlyFee >= 0);
+    }
+
+    function isValidPayment(data) {
+      return (data.student_id is string || data.studentId is string)
+          && data.amount is number && data.amount > 0
+          && (data.month_key is string || data.monthKey is string);
+    }
+
+    function isValidExpense(data) {
+      return data.description is string && data.description.size() > 0
+          && data.amount is number && data.amount > 0
+          && (data.month_key is string || data.monthKey is string);
+    }
+
+    // Students Collection
     match /students/{studentId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create, update: if isValidStudent(request.resource.data);
+      allow delete: if true;
     }
+
+    // Payments Collection
     match /payments/{paymentId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create, update: if isValidPayment(request.resource.data);
+      allow delete: if true;
     }
+
+    // Expenses Collection
     match /expenses/{expenseId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create, update: if isValidExpense(request.resource.data);
+      allow delete: if true;
     }
   }
 }

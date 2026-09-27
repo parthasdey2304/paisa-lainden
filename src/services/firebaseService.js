@@ -12,6 +12,119 @@ import {
 import { db } from '../firebase';
 
 /**
+ * ============================================================================
+ * FIRESTORE SCHEMA DEFINITIONS & VALIDATORS
+ * ============================================================================
+ * 
+ * 1. Collection 'students':
+ *    - name: string (required, trimmed, min 1 char)
+ *    - phone: string (required, trimmed, min 1 char)
+ *    - email: string | null (optional)
+ *    - subjects: number (integer >= 1, default: 1)
+ *    - monthly_fee: number (integer >= 0, required)
+ *    - monthlyFee: number (mirrored for frontend camelCase)
+ *    - class_year: string (optional, e.g. 'Class 10')
+ *    - classYear: string (mirrored for frontend camelCase)
+ *    - created_at: ISO 8601 string timestamp
+ *    - updated_at: ISO 8601 string timestamp (on update)
+ * 
+ * 2. Collection 'payments':
+ *    - student_id: string (reference to students doc ID, required)
+ *    - studentId: string (mirrored for frontend)
+ *    - amount: number (> 0, required)
+ *    - payment_date: string (YYYY-MM-DD, required)
+ *    - date: string (mirrored for frontend)
+ *    - month_key: string (YYYY-MM, required)
+ *    - monthKey: string (mirrored for frontend)
+ *    - payment_method: 'online' | 'cash' | 'upi' | 'offline' (required)
+ *    - paymentMethod: string (mirrored for frontend)
+ *    - created_at: ISO 8601 string timestamp
+ * 
+ * 3. Collection 'expenses':
+ *    - description: string (required, trimmed, min 1 char)
+ *    - amount: number (> 0, required)
+ *    - expense_date: string (YYYY-MM-DD, required)
+ *    - date: string (mirrored for frontend)
+ *    - month_key: string (YYYY-MM, required)
+ *    - monthKey: string (mirrored for frontend)
+ *    - category: string (optional, default 'General')
+ *    - created_at: ISO 8601 string timestamp
+ * ============================================================================
+ */
+
+export const validateStudentPayload = (data) => {
+  const name = String(data.name || '').trim();
+  const phone = String(data.phone || '').trim();
+  if (!name) throw new Error('Student name is required.');
+  if (!phone) throw new Error('Student phone number is required.');
+
+  const fee = Number(data.monthlyFee ?? data.monthly_fee ?? 0);
+  if (isNaN(fee) || fee < 0) throw new Error('Monthly fee must be a non-negative number.');
+
+  const subjects = Math.max(1, parseInt(data.subjects || 1, 10));
+  const classYear = String(data.classYear ?? data.class_year ?? '').trim();
+  const email = data.email ? String(data.email).trim() : null;
+
+  return {
+    name,
+    phone,
+    email,
+    subjects,
+    monthly_fee: fee,
+    monthlyFee: fee,
+    class_year: classYear,
+    classYear
+  };
+};
+
+export const validatePaymentPayload = (studentId, amount, date, paymentMethod = 'online', customMonthKey = null) => {
+  if (!studentId) throw new Error('Student ID is required for recording payment.');
+  const numAmount = Number(amount);
+  if (isNaN(numAmount) || numAmount <= 0) throw new Error('Payment amount must be greater than zero.');
+  if (!date) throw new Error('Payment date is required.');
+
+  let monthKey = customMonthKey;
+  if (!monthKey && date) {
+    const [year, month] = date.split('-');
+    monthKey = `${year}-${month}`;
+  }
+
+  const method = String(paymentMethod || 'online').toLowerCase();
+
+  return {
+    student_id: String(studentId),
+    studentId: String(studentId),
+    amount: numAmount,
+    payment_date: date,
+    date,
+    month_key: monthKey,
+    monthKey,
+    payment_method: method,
+    paymentMethod: method
+  };
+};
+
+export const validateExpensePayload = (amount, description, date, monthKey, category = 'General') => {
+  const numAmount = Number(amount);
+  if (isNaN(numAmount) || numAmount <= 0) throw new Error('Expense amount must be greater than zero.');
+  const desc = String(description || '').trim();
+  if (!desc) throw new Error('Expense description is required.');
+  if (!date) throw new Error('Expense date is required.');
+
+  const mKey = monthKey || (typeof date === 'string' ? date.slice(0, 7) : '');
+
+  return {
+    description: desc,
+    amount: numAmount,
+    expense_date: date,
+    date,
+    month_key: mKey,
+    monthKey: mKey,
+    category: String(category || 'General').trim()
+  };
+};
+
+/**
  * Normalizes payment structure for consistent UI usage across components.
  */
 export const normalizePayment = (payment) => {
@@ -68,18 +181,12 @@ export const fetchExpenses = async () => {
 };
 
 /**
- * Add a new student document to Firestore.
+ * Add a new student document to Firestore with schema validation.
  */
 export const addStudent = async (studentData) => {
+  const sanitized = validateStudentPayload(studentData);
   const payload = {
-    name: studentData.name,
-    email: studentData.email || null,
-    phone: studentData.phone,
-    subjects: Number(studentData.subjects || 1),
-    monthly_fee: Number(studentData.monthlyFee || studentData.monthly_fee || 0),
-    monthlyFee: Number(studentData.monthlyFee || studentData.monthly_fee || 0),
-    class_year: studentData.classYear || studentData.class_year || '',
-    classYear: studentData.classYear || studentData.class_year || '',
+    ...sanitized,
     created_at: new Date().toISOString()
   };
 
@@ -92,18 +199,13 @@ export const addStudent = async (studentData) => {
 };
 
 /**
- * Update an existing student document.
+ * Update an existing student document with schema validation.
  */
 export const editStudent = async (id, updatedData) => {
+  if (!id) throw new Error('Student ID is required for editing.');
+  const sanitized = validateStudentPayload(updatedData);
   const payload = {
-    name: updatedData.name,
-    email: updatedData.email || null,
-    phone: updatedData.phone,
-    subjects: Number(updatedData.subjects || 1),
-    monthly_fee: Number(updatedData.monthlyFee || updatedData.monthly_fee || 0),
-    monthlyFee: Number(updatedData.monthlyFee || updatedData.monthly_fee || 0),
-    class_year: updatedData.classYear || updatedData.class_year || '',
-    classYear: updatedData.classYear || updatedData.class_year || '',
+    ...sanitized,
     updated_at: new Date().toISOString()
   };
 
@@ -115,6 +217,7 @@ export const editStudent = async (id, updatedData) => {
  * Delete a student and cascade delete their payments.
  */
 export const deleteStudent = async (id) => {
+  if (!id) throw new Error('Student ID is required for deletion.');
   await deleteDoc(doc(db, 'students', id));
 
   // Also remove associated payments
@@ -132,25 +235,12 @@ export const deleteStudent = async (id) => {
 };
 
 /**
- * Record a payment for a student.
+ * Record a payment for a student with schema validation.
  */
 export const addPayment = async (studentId, amount, date, paymentMethod = 'online', customMonthKey = null) => {
-  let monthKey = customMonthKey;
-  if (!monthKey && date) {
-    const [year, month] = date.split('-');
-    monthKey = `${year}-${month}`;
-  }
-
+  const sanitized = validatePaymentPayload(studentId, amount, date, paymentMethod, customMonthKey);
   const paymentRecord = {
-    student_id: studentId,
-    studentId: studentId,
-    amount: Number(amount),
-    payment_date: date,
-    date: date,
-    month_key: monthKey,
-    monthKey: monthKey,
-    payment_method: paymentMethod,
-    paymentMethod: paymentMethod,
+    ...sanitized,
     created_at: new Date().toISOString()
   };
 
@@ -162,20 +252,17 @@ export const addPayment = async (studentId, amount, date, paymentMethod = 'onlin
  * Delete a payment record.
  */
 export const deletePayment = async (paymentId) => {
+  if (!paymentId) throw new Error('Payment ID is required.');
   await deleteDoc(doc(db, 'payments', paymentId));
 };
 
 /**
- * Record an expense.
+ * Record an expense with schema validation.
  */
-export const addExpense = async (amount, description, date, monthKey) => {
+export const addExpense = async (amount, description, date, monthKey, category = 'General') => {
+  const sanitized = validateExpensePayload(amount, description, date, monthKey, category);
   const expenseRecord = {
-    amount: Number(amount),
-    description,
-    expense_date: date,
-    date: date,
-    month_key: monthKey,
-    monthKey: monthKey,
+    ...sanitized,
     created_at: new Date().toISOString()
   };
 
@@ -187,5 +274,6 @@ export const addExpense = async (amount, description, date, monthKey) => {
  * Delete an expense record.
  */
 export const deleteExpense = async (expenseId) => {
+  if (!expenseId) throw new Error('Expense ID is required.');
   await deleteDoc(doc(db, 'expenses', expenseId));
 };
