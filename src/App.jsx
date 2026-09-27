@@ -1,10 +1,6 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { StudentProvider } from './context/StudentContext';
-import { StudentContext } from './context/StudentContext';
-import DashboardPage from './pages/DashboardPage';
-import StudentListPage from './pages/StudentListPage';
-import ExpensesPage from './pages/ExpensesPage';
+import { StudentProvider, StudentContext } from './context/StudentContext';
 import LoginPage from './components/LoginPage';
 import DesktopNotificationAlert from './components/DesktopNotificationAlert';
 import InteractiveBackground from './components/InteractiveBackground';
@@ -12,6 +8,10 @@ import ThemeControls from './components/ThemeControls';
 import FloatingActionMenu from './components/FloatingActionMenu';
 import { isAuthenticated, login } from './utils/auth';
 import './index.css';
+
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const StudentListPage = lazy(() => import('./pages/StudentListPage'));
+const ExpensesPage = lazy(() => import('./pages/ExpensesPage'));
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -226,11 +226,17 @@ function App() {
         </header>
 
         <main>
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/students" element={<StudentListPage />} />
-            <Route path="/expenses" element={<ExpensesPage />} />
-          </Routes>
+          <Suspense fallback={
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px', fontWeight: 800, fontSize: '1.2rem' }}>
+              Loading...
+            </div>
+          }>
+            <Routes>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/students" element={<StudentListPage />} />
+              <Route path="/expenses" element={<ExpensesPage />} />
+            </Routes>
+          </Suspense>
         </main>
         <FloatingActionMenu />
       </div>

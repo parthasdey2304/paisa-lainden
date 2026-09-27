@@ -1,8 +1,4 @@
-import * as XLSX from 'xlsx-js-style';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
-export const exportToPDF = (
+export const exportToPDF = async (
   students,
   selectedMonth,
   totalExpectedFees,
@@ -12,6 +8,10 @@ export const exportToPDF = (
   pendingStudents
 ) => {
   try {
+    const { jsPDF } = await import('jspdf');
+    const autoTableModule = await import('jspdf-autotable');
+    const autoTable = autoTableModule.default || autoTableModule;
+
     const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const selectedMonthIndex = selectedMonth ? parseInt(selectedMonth.split('-')[1], 10) - 1 : new Date().getMonth();
     const year = selectedMonth ? selectedMonth.split('-')[0] : new Date().getFullYear();
@@ -178,7 +178,7 @@ export const exportToPDF = (
 
 
 
-export const exportToExcel = (
+export const exportToExcel = async (
   students,
   selectedMonth,
   totalExpectedFees,
@@ -187,10 +187,12 @@ export const exportToExcel = (
   totalStudents,
   pendingStudents
 ) => {
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const selectedMonthIndex = selectedMonth ? parseInt(selectedMonth.split('-')[1], 10) - 1 : new Date().getMonth();
-  const year = selectedMonth ? selectedMonth.split('-')[0] : new Date().getFullYear();
-  const currentMonthName = monthNames[selectedMonthIndex];
+  try {
+    const XLSX = await import('xlsx-js-style');
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const selectedMonthIndex = selectedMonth ? parseInt(selectedMonth.split('-')[1], 10) - 1 : new Date().getMonth();
+    const year = selectedMonth ? selectedMonth.split('-')[0] : new Date().getFullYear();
+    const currentMonthName = monthNames[selectedMonthIndex];
 
   // ── Border definition ──────────────────────────────────────────
   const border = {
@@ -395,4 +397,8 @@ export const exportToExcel = (
 
   XLSX.utils.book_append_sheet(wb, ws, `Report_${selectedMonth}`);
   XLSX.writeFile(wb, `Monthly_Report_${selectedMonth}.xlsx`);
+  } catch (err) {
+    console.error('Excel Generation Error:', err);
+    alert('Failed to generate Excel report: ' + err.message);
+  }
 };

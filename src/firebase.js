@@ -3,7 +3,7 @@ import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
-const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' && process.env ? process.env : {});
+const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof globalThis.process !== 'undefined' && globalThis.process.env ? globalThis.process.env : {});
 
 const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY,

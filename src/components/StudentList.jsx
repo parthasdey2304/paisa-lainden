@@ -1,7 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
-import html2pdf from 'html2pdf.js';
 import { StudentContext } from '../context/StudentContext';
 import ConfirmModal from './ConfirmModal';
 import InvoiceDocument from './InvoiceDocument';
@@ -23,7 +22,7 @@ const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
     return () => document.removeEventListener('click', closeDropdowns);
   }, []);
 
-  const handleDownloadInvoice = (student) => {
+  const handleDownloadInvoice = async (student) => {
     const payment = student.payments.find(p => p.monthKey === selectedMonth);
     if (!payment) return;
 
@@ -35,7 +34,9 @@ const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
       <InvoiceDocument student={student} payment={payment} monthName={currentMonthName} />
     );
     
-    setTimeout(() => {
+    try {
+      const html2pdfModule = await import('html2pdf.js');
+      const html2pdf = html2pdfModule.default || html2pdfModule;
       const opt = {
         margin:       0,
         filename:     `${student.name}_Invoice_${selectedMonth}.pdf`,
@@ -44,12 +45,11 @@ const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
         jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
       };
       
-      html2pdf().set(opt).from(htmlContent).save()
-        .catch(err => {
-          console.error("PDF Invoice Error:", err);
-          alert("Failed to generate PDF. There might be an unsupported CSS feature or browser extension interfering.");
-        });
-    }, 100); 
+      await html2pdf().set(opt).from(htmlContent).save();
+    } catch (err) {
+      console.error("PDF Invoice Error:", err);
+      alert("Failed to generate PDF. There might be an unsupported CSS feature or browser extension interfering.");
+    }
   };
 
   const handleSendWhatsApp = async (student) => {
@@ -78,6 +78,8 @@ const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
     
     setTimeout(async () => {
       try {
+        const html2pdfModule = await import('html2pdf.js');
+        const html2pdf = html2pdfModule.default || html2pdfModule;
         const opt = {
           margin:       0,
           filename:     `${student.name}_Invoice_${selectedMonth}.pdf`,
