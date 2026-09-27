@@ -1,5 +1,16 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient';
+import { createContext, useState, useEffect } from 'react';
+import {
+  fetchStudents as getFirebaseStudents,
+  fetchExpenses as getFirebaseExpenses,
+  addStudent as createFirebaseStudent,
+  editStudent as updateFirebaseStudent,
+  deleteStudent as removeFirebaseStudent,
+  addPayment as recordFirebasePayment,
+  deletePayment as removeFirebasePayment,
+  addExpense as createFirebaseExpense,
+  deleteExpense as removeFirebaseExpense,
+  normalizePayment
+} from '../services/firebaseService';
 
 export const StudentContext = createContext();
 
@@ -12,242 +23,213 @@ export const StudentProvider = ({ children }) => {
   const currentMonthKey = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}`;
   const [selectedMonth, setSelectedMonth] = useState(currentMonthKey);
 
-  const normalizePayment = (payment) => {
-    const dateValue = payment.payment_date || payment.date || null;
-    const monthFromDate = typeof dateValue === 'string' ? dateValue.slice(0, 7) : null;
-    return {
-      ...payment,
-      date: dateValue,
-      monthKey: payment.month_key || payment.monthKey || monthFromDate || null,
-      paymentMethod: payment.payment_method || payment.paymentMethod
-    };
-  };
-
-  const fetchStudents = async () => {
+  const loadData = async (isInitial = false) => {
     try {
-      setLoading(true);
-      const { data: studentsData, error: studentError } = await supabase
-        .from('students')
-        .select('*');
-        
-      if (studentError) throw studentError;
-
-      const { data: paymentsData, error: paymentError } = await supabase
-        .from('payments')
-        .select('*');
-        
-      if (paymentError) throw paymentError;
-
-      const { data: expensesData, error: expenseError } = await supabase
-        .from('expenses')
-        .select('*');
-        
-      if (expenseError) {
-        console.warn('Could not fetch expenses from Supabase. Falling back to local storage:', expenseError);
-        const savedExpenses = localStorage.getItem('student-manager-expenses');
-        setExpenses(savedExpenses ? JSON.parse(savedExpenses) : []);
-      } else {
-        setExpenses(expensesData || []);
+      if (!isInitial) {
+        setLoading(true);
       }
+      const [studentsData, expensesData] = await Promise.all([
+        getFirebaseStudents().catch(err => {
+          console.warn('Firebase: Could not load students from Firestore. Checking local cache:', err);
+          const saved = localStorage.getItem('student-manager-data');
+          return saved ? JSON.parse(saved) : [];
+        }),
+        getFirebaseExpenses().catch(err => {
+          console.warn('Firebase: Could not load expenses from Firestore. Checking local cache:', err);
+          const saved = localStorage.getItem('student-manager-expenses');
+          return saved ? JSON.parse(saved) : [];
+        })
+      ]);
 
-      // merge payments into students
-      const mergedStudents = (studentsData || []).map(student => {
-        const studentPayments = (paymentsData || []).filter(p => p.student_id === student.id);
-        // Map database snake_case to camelCase for existing UI logic
-        return { 
-          ...student, 
-          monthlyFee: student.monthly_fee,
-          classYear: student.class_year,
-          payments: studentPayments.map(normalizePayment)
-        };
-      });
+      setStudents(studentsData || []);
+      setExpenses(expensesData || []);
       
-      setStudents(mergedStudents);
+      // Cache locally for offline reliability
+      if (studentsData && studentsData.length > 0) {
+        localStorage.setItem('student-manager-data', JSON.stringify(studentsData));
+      }
+      if (expensesData && expensesData.length > 0) {
+        localStorage.setItem('student-manager-expenses', JSON.stringify(expensesData));
+      }
     } catch (error) {
-      console.error('Error fetching data from Supabase:', error);
-      // Fallback to localstorage or empty array for graceful degradation if DB isn't set up yet
-      const saved = localStorage.getItem('student-manager-data');
-      if (saved) setStudents(JSON.parse(saved));
+      console.error('Error fetching data from Firebase:', error);
+      const savedStudents = localStorage.getItem('student-manager-data');
+      if (savedStudents) setStudents(JSON.parse(savedStudents));
+      const savedExpenses = localStorage.getItem('student-manager-expenses');
+      if (savedExpenses) setExpenses(JSON.parse(savedExpenses));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStudents();
+    loadData(true);
   }, []);
 
   const addStudent = async (studentData) => {
-    const dbData = {
-      name: studentData.name,
-      email: studentData.email,
-      phone: studentData.phone,
-      subjects: Number(studentData.subjects || 1),
-      monthly_fee: Number(studentData.monthlyFee)
-      // class_year removed because it does not exist in the remote database yet
-    };
-
-    const { data, error } = await supabase
-      .from('students')
-      .insert([dbData])
-      .select();
-      
-    if (error) {
-      console.error('Error adding student:', error);
-      // Fallback optimistic UI
-      setStudents(prev => [...prev, { ...studentData, id: Date.now().toString(), payments: [] }]);
-    } else if (data && data.length > 0) {
-      setStudents(prev => [...prev, { ...data[0], monthlyFee: data[0].monthly_fee, classYear: data[0].class_year, payments: [] }]);
+    try {
+      const createdStudent = await createFirebaseStudent(studentData);
+      setStudents(prev => {
+        const next = [...prev, createdStudent];
+        localStorage.setItem('student-manager-data', JSON.stringify(next));
+        return next;
+      });
+    } catch (error) {
+      console.error('Error adding student to Firestore:', error);
+      // Optimistic offline fallback
+      const localId = Date.now().toString();
+      const fallback = {
+        ...studentData,
+        id: localId,
+        monthlyFee: Number(studentData.monthlyFee || 0),
+        classYear: studentData.classYear || '',
+        payments: []
+      };
+      setStudents(prev => {
+        const next = [...prev, fallback];
+        localStorage.setItem('student-manager-data', JSON.stringify(next));
+        return next;
+      });
     }
   };
 
   const editStudent = async (id, updatedData) => {
-    const dbData = {
-      name: updatedData.name,
-      email: updatedData.email,
-      phone: updatedData.phone,
-      subjects: Number(updatedData.subjects || 1),
-      monthly_fee: Number(updatedData.monthlyFee)
-      // class_year removed to prevent API error
-    };
-
-    const { error } = await supabase
-      .from('students')
-      .update(dbData)
-      .eq('id', id);
-      
-    if (error) {
-      console.error('Error updating student:', error);
+    try {
+      await updateFirebaseStudent(id, updatedData);
+    } catch (error) {
+      console.error('Error updating student in Firestore:', error);
     }
-    // Optimistic update
-    setStudents(prev => prev.map(s => s.id === id ? { ...s, ...updatedData, monthlyFee: updatedData.monthlyFee, classYear: updatedData.classYear } : s));
+
+    setStudents(prev => {
+      const next = prev.map(s =>
+        s.id === id
+          ? {
+              ...s,
+              ...updatedData,
+              monthlyFee: Number(updatedData.monthlyFee ?? s.monthlyFee),
+              classYear: updatedData.classYear ?? s.classYear
+            }
+          : s
+      );
+      localStorage.setItem('student-manager-data', JSON.stringify(next));
+      return next;
+    });
   };
 
   const deleteStudent = async (id) => {
-    const { error } = await supabase
-      .from('students')
-      .delete()
-      .eq('id', id);
-      
-    if (error) {
-      console.error('Error deleting student:', error);
+    try {
+      await removeFirebaseStudent(id);
+    } catch (error) {
+      console.error('Error deleting student from Firestore:', error);
     }
-    setStudents(prev => prev.filter(s => s.id !== id));
+
+    setStudents(prev => {
+      const next = prev.filter(s => s.id !== id);
+      localStorage.setItem('student-manager-data', JSON.stringify(next));
+      return next;
+    });
   };
 
   const addPayment = async (studentId, amount, date, paymentMethod = 'online', customMonthKey = null) => {
-    // If a custom month is provided (e.g. from the UI), use it. Otherwise, default to the payment date's month
     let monthKey = customMonthKey;
-    if (!monthKey) {
+    if (!monthKey && date) {
       const [year, month] = date.split('-');
       monthKey = `${year}-${month}`;
     }
-    
-    const paymentRecord = {
-      student_id: studentId,
-      amount: Number(amount),
-      payment_date: date,
-      month_key: monthKey
-    };
 
-    const { data, error } = await supabase
-      .from('payments')
-      .insert([paymentRecord])
-      .select();
-
-    if (error) {
-      console.error('Error adding payment:', error);
+    let newPayment;
+    try {
+      newPayment = await recordFirebasePayment(studentId, amount, date, paymentMethod, monthKey);
+    } catch (error) {
+      console.error('Error adding payment to Firestore:', error);
+      newPayment = normalizePayment({
+        id: Date.now().toString(),
+        student_id: studentId,
+        amount: Number(amount),
+        payment_date: date,
+        month_key: monthKey,
+        payment_method: paymentMethod
+      });
     }
-    
-    const paymentObj = (data && data.length > 0) ? data[0] : { id: Date.now().toString(), ...paymentRecord };
-    const normalizedPayment = normalizePayment({
-      ...paymentObj,
-      payment_date: paymentObj.payment_date || paymentRecord.payment_date,
-      month_key: paymentObj.month_key || paymentRecord.month_key,
-      payment_method: paymentObj.payment_method || paymentMethod
-    });
 
-    setStudents(prev => prev.map(s => {
-      if (s.id === studentId) {
-        return {
-          ...s,
-          payments: [...(s.payments || []), normalizedPayment]
-        };
-      }
-      return s;
-    }));
+    setStudents(prev => {
+      const next = prev.map(s => {
+        if (s.id === studentId) {
+          return {
+            ...s,
+            payments: [...(s.payments || []), newPayment]
+          };
+        }
+        return s;
+      });
+      localStorage.setItem('student-manager-data', JSON.stringify(next));
+      return next;
+    });
   };
 
   const deletePayment = async (studentId, paymentId) => {
-    const { error } = await supabase
-      .from('payments')
-      .delete()
-      .eq('id', paymentId);
-      
-    if (error) {
-      console.error('Error deleting payment:', error);
+    try {
+      await removeFirebasePayment(paymentId);
+    } catch (error) {
+      console.error('Error deleting payment from Firestore:', error);
     }
-    
-    setStudents(prev => prev.map(s => {
-      if (s.id === studentId) {
-        return {
-          ...s,
-          payments: s.payments.filter(p => p.id !== paymentId)
-        };
-      }
-      return s;
-    }));
+
+    setStudents(prev => {
+      const next = prev.map(s => {
+        if (s.id === studentId) {
+          return {
+            ...s,
+            payments: (s.payments || []).filter(p => p.id !== paymentId)
+          };
+        }
+        return s;
+      });
+      localStorage.setItem('student-manager-data', JSON.stringify(next));
+      return next;
+    });
   };
 
   const addExpense = async (amount, description, date, monthKey) => {
-    const expenseRecord = {
-      amount: Number(amount),
-      description,
-      expense_date: date,
-      month_key: monthKey
-    };
-
-    const { data, error } = await supabase
-      .from('expenses')
-      .insert([expenseRecord])
-      .select();
-
-    if (error) {
-      console.warn('Error adding expense to Supabase. Saving locally instead:', error);
+    let createdExpense;
+    try {
+      createdExpense = await createFirebaseExpense(amount, description, date, monthKey);
+    } catch (error) {
+      console.warn('Error adding expense to Firestore. Saving locally instead:', error);
+      createdExpense = {
+        id: Date.now().toString(),
+        amount: Number(amount),
+        description,
+        expense_date: date,
+        month_key: monthKey
+      };
     }
 
-    const expenseObj = (data && data.length > 0) ? data[0] : { id: Date.now().toString(), ...expenseRecord };
     setExpenses(prev => {
-      const updatedExpenses = [...prev, expenseObj];
-      localStorage.setItem('student-manager-expenses', JSON.stringify(updatedExpenses));
-      return updatedExpenses;
+      const updated = [...prev, createdExpense];
+      localStorage.setItem('student-manager-expenses', JSON.stringify(updated));
+      return updated;
     });
   };
 
   const deleteExpense = async (expenseId) => {
-    const { error } = await supabase
-      .from('expenses')
-      .delete()
-      .eq('id', expenseId);
-
-    if (error) {
-      console.warn('Error deleting expense from Supabase. Deleting locally instead:', error);
+    try {
+      await removeFirebaseExpense(expenseId);
+    } catch (error) {
+      console.warn('Error deleting expense from Firestore. Deleting locally instead:', error);
     }
 
     setExpenses(prev => {
-      const updatedExpenses = prev.filter(e => e.id !== expenseId);
-      localStorage.setItem('student-manager-expenses', JSON.stringify(updatedExpenses));
-      return updatedExpenses;
+      const updated = prev.filter(e => e.id !== expenseId);
+      localStorage.setItem('student-manager-expenses', JSON.stringify(updated));
+      return updated;
     });
   };
 
-  // Helper logic for dashboard
+  // Helper metrics for dashboard & reporting
   const totalStudents = students.length;
-  
-  // Total fees expected this month
+
   const totalExpectedFees = students.reduce((sum, s) => sum + Number(s.monthlyFee || 0), 0);
-  
-  // Total fees collected for the selected month
+
   const collectedThisMonth = students.reduce((sum, s) => {
     const selectedMonthPayments = (s.payments || []).filter(p => p.monthKey === selectedMonth);
     return sum + selectedMonthPayments.reduce((pSum, p) => pSum + Number(p.amount), 0);
@@ -255,13 +237,11 @@ export const StudentProvider = ({ children }) => {
 
   const pendingFees = Math.max(0, totalExpectedFees - collectedThisMonth);
 
-  // Total revenue all time
   const totalRevenue = students.reduce((sum, s) => {
     const allPayments = s.payments || [];
     return sum + allPayments.reduce((pSum, p) => pSum + Number(p.amount), 0);
   }, 0);
 
-  // Students who haven't fully paid for the selected month
   const pendingStudents = students.filter(s => {
     const paidThisMonth = (s.payments || [])
       .filter(p => p.monthKey === selectedMonth)
@@ -269,7 +249,6 @@ export const StudentProvider = ({ children }) => {
     return paidThisMonth < Number(s.monthlyFee || 0);
   });
 
-  // Notification Logic (always based on real current month)
   const showFeeNotification = todayDate.getDate() >= 5 && selectedMonth === currentMonthKey && pendingStudents.length > 0;
 
   return (
@@ -293,7 +272,8 @@ export const StudentProvider = ({ children }) => {
       currentMonthKey,
       selectedMonth,
       setSelectedMonth,
-      totalRevenue
+      totalRevenue,
+      refreshData: loadData
     }}>
       {children}
     </StudentContext.Provider>

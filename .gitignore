@@ -13,6 +13,14 @@ dist-ssr
 dist-electron
 *.local
 
+# Environment variables
+.env
+.env*.local
+!.env.example
+
+# Local tools & caches
+graphify-out/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
