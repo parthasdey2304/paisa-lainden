@@ -1,7 +1,9 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
+  setDoc,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -49,6 +51,10 @@ import { db } from '../firebase.js';
  *    - monthKey: string (mirrored for frontend)
  *    - category: string (optional, default 'General')
  *    - created_at: ISO 8601 string timestamp
+ * 
+ * 4. Collection 'deleted_students':
+ *    - Stores archived/soft-deleted students with their payments array
+ *    - deleted_at: ISO 8601 string timestamp
  * ============================================================================
  */
 
@@ -142,7 +148,7 @@ export const normalizePayment = (payment) => {
 };
 
 /**
- * Fetch all students with their payments merged.
+ * Fetch all active students with their payments merged.
  */
 export const fetchStudents = async () => {
   const studentsSnap = await getDocs(collection(db, 'students'));
@@ -166,6 +172,22 @@ export const fetchStudents = async () => {
   });
 
   return merged;
+};
+
+/**
+ * Fetch all soft-deleted / archived students.
+ */
+export const fetchDeletedStudents = async () => {
+  const snap = await getDocs(collection(db, 'deleted_students'));
+  return snap.docs.map(d => ({
+    id: d.id,
+    ...d.data(),
+    monthlyFee: Number(d.data().monthly_fee ?? d.data().monthlyFee ?? 0),
+    monthly_fee: Number(d.data().monthly_fee ?? d.data().monthlyFee ?? 0),
+    classYear: d.data().class_year ?? d.data().classYear ?? '',
+    class_year: d.data().class_year ?? d.data().classYear ?? '',
+    payments: (d.data().payments || []).map(normalizePayment)
+  }));
 };
 
 /**
@@ -214,24 +236,115 @@ export const editStudent = async (id, updatedData) => {
 };
 
 /**
- * Delete a student and cascade delete their payments.
+ * Soft delete a student: moves student & payments to 'deleted_students' collection.
  */
 export const deleteStudent = async (id) => {
   if (!id) throw new Error('Student ID is required for deletion.');
-  await deleteDoc(doc(db, 'students', id));
 
-  // Also remove associated payments
+  const studentRef = doc(db, 'students', id);
+  const studentSnap = await getDoc(studentRef);
+  if (!studentSnap.exists()) return;
+  const studentData = studentSnap.data();
+
+  // Retrieve associated payments
+  let studentPayments = [];
   try {
-    const q = query(collection(db, 'payments'), where('student_id', '==', id));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const batch = writeBatch(db);
-      snap.forEach(d => batch.delete(d.ref));
-      await batch.commit();
-    }
+    const q1 = query(collection(db, 'payments'), where('student_id', '==', id));
+    const snap1 = await getDocs(q1);
+    studentPayments = snap1.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const q2 = query(collection(db, 'payments'), where('studentId', '==', id));
+    const snap2 = await getDocs(q2);
+    snap2.docs.forEach(d => {
+      if (!studentPayments.some(p => p.id === d.id)) {
+        studentPayments.push({ id: d.id, ...d.data() });
+      }
+    });
   } catch (err) {
-    console.warn('Could not cascade delete payments for student:', err);
+    console.warn('Could not retrieve payments for soft-deleted student:', err);
   }
+
+  // Save into 'deleted_students' collection
+  const deletedDoc = {
+    ...studentData,
+    deleted_at: new Date().toISOString(),
+    payments: studentPayments
+  };
+  await setDoc(doc(db, 'deleted_students', id), deletedDoc);
+
+  // Remove active student doc
+  await deleteDoc(studentRef);
+
+  // Remove active payments
+  if (studentPayments.length > 0) {
+    try {
+      const batch = writeBatch(db);
+      studentPayments.forEach(p => {
+        batch.delete(doc(db, 'payments', p.id));
+      });
+      await batch.commit();
+    } catch (err) {
+      console.warn('Error clearing active payments for deleted student:', err);
+    }
+  }
+
+  return { id, ...deletedDoc };
+};
+
+/**
+ * Restore / Bring Back a deleted student: moves them back to 'students' and restores payments.
+ */
+export const restoreStudent = async (id) => {
+  if (!id) throw new Error('Student ID is required for restoration.');
+
+  const deletedRef = doc(db, 'deleted_students', id);
+  const deletedSnap = await getDoc(deletedRef);
+  if (!deletedSnap.exists()) throw new Error('Student record not found in deleted archive.');
+  const deletedData = deletedSnap.data();
+
+  const { deleted_at, payments: savedPayments, ...studentPayload } = deletedData;
+
+  // Restore into 'students' collection
+  await setDoc(doc(db, 'students', id), {
+    ...studentPayload,
+    restored_at: new Date().toISOString()
+  });
+
+  // Restore payments in 'payments' collection
+  const restoredPayments = [];
+  if (Array.isArray(savedPayments) && savedPayments.length > 0) {
+    try {
+      const batch = writeBatch(db);
+      for (const p of savedPayments) {
+        const pRef = doc(db, 'payments', p.id || Date.now().toString());
+        const normalized = normalizePayment(p);
+        batch.set(pRef, normalized);
+        restoredPayments.push(normalized);
+      }
+      await batch.commit();
+    } catch (err) {
+      console.warn('Error restoring payments:', err);
+    }
+  }
+
+  // Remove from deleted_students
+  await deleteDoc(deletedRef);
+
+  return {
+    id,
+    ...studentPayload,
+    monthlyFee: Number(studentPayload.monthly_fee ?? studentPayload.monthlyFee ?? 0),
+    classYear: studentPayload.class_year ?? studentPayload.classYear ?? '',
+    payments: restoredPayments
+  };
+};
+
+/**
+ * Permanently purge a student from deleted_students archive.
+ */
+export const permanentlyDeleteStudent = async (id) => {
+  if (!id) throw new Error('Student ID is required.');
+  await deleteDoc(doc(db, 'deleted_students', id));
 };
 
 /**

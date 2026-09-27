@@ -308,8 +308,8 @@ const StudentList = ({ onEdit, onPay, searchQuery = '' }) => {
 
       <ConfirmModal 
         isOpen={!!studentToDelete}
-        title="Delete Student"
-        message={`Are you sure you want to delete ${studentToDelete?.name}? This action cannot be undone.`}
+        title="Remove Student"
+        message={`Are you sure you want to remove ${studentToDelete?.name}? They will be safely moved to the Deleted / Archive list and can be restored anytime.`}
         onConfirm={() => {
           if (studentToDelete) {
             deleteStudent(studentToDelete.id);

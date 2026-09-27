@@ -1,21 +1,25 @@
 import { createContext, useState, useEffect } from 'react';
 import {
   fetchStudents as getFirebaseStudents,
+  fetchDeletedStudents as getFirebaseDeletedStudents,
   fetchExpenses as getFirebaseExpenses,
   addStudent as createFirebaseStudent,
   editStudent as updateFirebaseStudent,
   deleteStudent as removeFirebaseStudent,
+  restoreStudent as restoreFirebaseStudent,
+  permanentlyDeleteStudent as purgeFirebaseStudent,
   addPayment as recordFirebasePayment,
   deletePayment as removeFirebasePayment,
   addExpense as createFirebaseExpense,
   deleteExpense as removeFirebaseExpense,
   normalizePayment
-} from '../services/firebaseService';
+} from '../services/firebaseService.js';
 
 export const StudentContext = createContext();
 
 export const StudentProvider = ({ children }) => {
   const [students, setStudents] = useState([]);
+  const [deletedStudents, setDeletedStudents] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +32,7 @@ export const StudentProvider = ({ children }) => {
       if (!isInitial) {
         setLoading(true);
       }
-      const [studentsData, expensesData] = await Promise.all([
+      const [studentsData, expensesData, deletedData] = await Promise.all([
         getFirebaseStudents().catch(err => {
           console.warn('Firebase: Could not load students from Firestore. Checking local cache:', err);
           const saved = localStorage.getItem('student-manager-data');
@@ -38,11 +42,17 @@ export const StudentProvider = ({ children }) => {
           console.warn('Firebase: Could not load expenses from Firestore. Checking local cache:', err);
           const saved = localStorage.getItem('student-manager-expenses');
           return saved ? JSON.parse(saved) : [];
+        }),
+        getFirebaseDeletedStudents().catch(err => {
+          console.warn('Firebase: Could not load deleted students from Firestore:', err);
+          const saved = localStorage.getItem('student-manager-deleted');
+          return saved ? JSON.parse(saved) : [];
         })
       ]);
 
       setStudents(studentsData || []);
       setExpenses(expensesData || []);
+      setDeletedStudents(deletedData || []);
       
       // Cache locally for offline reliability
       if (studentsData && studentsData.length > 0) {
@@ -51,12 +61,17 @@ export const StudentProvider = ({ children }) => {
       if (expensesData && expensesData.length > 0) {
         localStorage.setItem('student-manager-expenses', JSON.stringify(expensesData));
       }
+      if (deletedData && deletedData.length > 0) {
+        localStorage.setItem('student-manager-deleted', JSON.stringify(deletedData));
+      }
     } catch (error) {
       console.error('Error fetching data from Firebase:', error);
       const savedStudents = localStorage.getItem('student-manager-data');
       if (savedStudents) setStudents(JSON.parse(savedStudents));
       const savedExpenses = localStorage.getItem('student-manager-expenses');
       if (savedExpenses) setExpenses(JSON.parse(savedExpenses));
+      const savedDeleted = localStorage.getItem('student-manager-deleted');
+      if (savedDeleted) setDeletedStudents(JSON.parse(savedDeleted));
     } finally {
       setLoading(false);
     }
@@ -76,7 +91,6 @@ export const StudentProvider = ({ children }) => {
       });
     } catch (error) {
       console.error('Error adding student to Firestore:', error);
-      // Optimistic offline fallback
       const localId = Date.now().toString();
       const fallback = {
         ...studentData,
@@ -116,18 +130,69 @@ export const StudentProvider = ({ children }) => {
     });
   };
 
+  // Soft delete: moves to deleted_students collection
   const deleteStudent = async (id) => {
-    try {
-      await removeFirebaseStudent(id);
-    } catch (error) {
-      console.error('Error deleting student from Firestore:', error);
-    }
+    const targetStudent = students.find(s => s.id === id);
+    if (!targetStudent) return;
 
+    // Optimistic UI update
     setStudents(prev => {
       const next = prev.filter(s => s.id !== id);
       localStorage.setItem('student-manager-data', JSON.stringify(next));
       return next;
     });
+
+    setDeletedStudents(prev => {
+      const next = [...prev, { ...targetStudent, deleted_at: new Date().toISOString() }];
+      localStorage.setItem('student-manager-deleted', JSON.stringify(next));
+      return next;
+    });
+
+    try {
+      await removeFirebaseStudent(id);
+    } catch (error) {
+      console.error('Error archiving student in Firestore:', error);
+    }
+  };
+
+  // Restore / Bring Back student from deleted_students
+  const restoreStudent = async (id) => {
+    const targetDeleted = deletedStudents.find(s => s.id === id);
+    if (!targetDeleted) return;
+
+    // Optimistic UI update
+    setDeletedStudents(prev => {
+      const next = prev.filter(s => s.id !== id);
+      localStorage.setItem('student-manager-deleted', JSON.stringify(next));
+      return next;
+    });
+
+    setStudents(prev => {
+      const next = [...prev, targetDeleted];
+      localStorage.setItem('student-manager-data', JSON.stringify(next));
+      return next;
+    });
+
+    try {
+      await restoreFirebaseStudent(id);
+    } catch (error) {
+      console.error('Error restoring student in Firestore:', error);
+    }
+  };
+
+  // Permanent purge
+  const permanentlyDeleteStudent = async (id) => {
+    setDeletedStudents(prev => {
+      const next = prev.filter(s => s.id !== id);
+      localStorage.setItem('student-manager-deleted', JSON.stringify(next));
+      return next;
+    });
+
+    try {
+      await purgeFirebaseStudent(id);
+    } catch (error) {
+      console.error('Error permanently deleting student from Firestore:', error);
+    }
   };
 
   const addPayment = async (studentId, amount, date, paymentMethod = 'online', customMonthKey = null) => {
@@ -254,11 +319,14 @@ export const StudentProvider = ({ children }) => {
   return (
     <StudentContext.Provider value={{
       students,
+      deletedStudents,
       expenses,
       loading,
       addStudent,
       editStudent,
       deleteStudent,
+      restoreStudent,
+      permanentlyDeleteStudent,
       addPayment,
       deletePayment,
       addExpense,

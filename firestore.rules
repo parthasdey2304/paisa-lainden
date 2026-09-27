@@ -42,5 +42,10 @@ service cloud.firestore {
       allow create, update: if isValidExpense(request.resource.data);
       allow delete: if true;
     }
+
+    // Deleted / Archived Students Collection
+    match /deleted_students/{studentId} {
+      allow read, write: if true;
+    }
   }
 }
